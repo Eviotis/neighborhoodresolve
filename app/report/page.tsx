@@ -34,6 +34,21 @@ export default function ReportPage() {
     setPhotoPreviews(files.map(f => URL.createObjectURL(f)))
   }
 
+  async function uploadPhotos(caseId: string): Promise<string[]> {
+    const urls: string[] = []
+    for (let i = 0; i < photos.length; i++) {
+      const file = photos[i]
+      const ext = file.name.split('.').pop() || 'jpg'
+      const path = `${caseId}/${i}.${ext}`
+      const { error } = await supabase.storage.from('case-photos').upload(path, file, { upsert: true })
+      if (!error) {
+        const { data } = supabase.storage.from('case-photos').getPublicUrl(path)
+        urls.push(data.publicUrl)
+      }
+    }
+    return urls
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
@@ -42,30 +57,20 @@ export default function ReportPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push('/'); return }
 
-    // Check abuse — report count
+    // Check report count for abuse
     const { data: profile } = await supabase.from('profiles').select('report_count, report_weight').eq('id', user.id).single()
+    
     if (profile && profile.report_count >= 10) {
-      setError('You have reached the maximum number of reports allowed. Please contact your neighborhood manager.')
+      setError('Please contact your neighborhood manager to submit additional reports.')
       setLoading(false)
       return
     }
 
-    // Check 1-per-month
-    const startOfMonth = new Date()
-    startOfMonth.setDate(1)
-    startOfMonth.setHours(0,0,0,0)
-    const { count } = await supabase.from('cases').select('*', { count: 'exact', head: true }).gte('created_at', startOfMonth.toISOString())
-    if ((count || 0) >= 1 && profile?.report_count > 0) {
-      setError('You have already submitted a report this month. One report per household per month keeps the system fair.')
-      setLoading(false)
-      return
-    }
-
-    // Calculate weight
     const reportCount = (profile?.report_count || 0) + 1
     const weight = reportCount > 5 ? 2.0 : reportCount > 3 ? 3.0 : 5.0
 
-    const { error: insertError } = await supabase.from('cases').insert({
+    // Insert case first to get ID
+    const { data: newCase, error: insertError } = await supabase.from('cases').insert({
       category,
       location,
       description,
@@ -73,27 +78,31 @@ export default function ReportPage() {
       status: 'open',
       strike_count: 0,
       priority_score: weight,
+      photo_urls: [],
       created_at: new Date().toISOString(),
-    })
+    }).select().single()
 
-    if (insertError) {
+    if (insertError || !newCase) {
       setError('Something went wrong. Please try again.')
       setLoading(false)
       return
     }
 
-    // Update report count and weight
+    // Upload photos and update case
+    if (photos.length > 0) {
+      const photoUrls = await uploadPhotos(newCase.id)
+      if (photoUrls.length > 0) {
+        await supabase.from('cases').update({ photo_urls: photoUrls }).eq('id', newCase.id)
+      }
+    }
+
+    // Update profile report count
     if (profile) {
       await supabase.from('profiles').update({
         report_count: reportCount,
         report_weight: weight,
         updated_at: new Date().toISOString()
       }).eq('id', user.id)
-    }
-
-    // Alert if abuse threshold reached
-    if (reportCount >= 5) {
-      console.log('Abuse threshold reached — alert MGR and ADMIN')
     }
 
     setSubmitted(true)
@@ -124,7 +133,7 @@ export default function ReportPage() {
       <div className="bg-white border-b border-gray-100 px-4 pt-12 pb-4">
         <div className="max-w-lg mx-auto">
           <h1 className="text-lg font-semibold text-gray-900">Report an issue</h1>
-          <p className="text-xs text-gray-400 mt-0.5">Completely anonymous · 1 per household per month</p>
+          <p className="text-xs text-gray-400 mt-0.5">Completely anonymous</p>
         </div>
       </div>
 
@@ -187,7 +196,7 @@ export default function ReportPage() {
             <div className="flex items-center justify-between py-2">
               <div>
                 <p className="text-sm font-medium text-gray-700">Request volunteer help?</p>
-                <p className="text-xs text-gray-400 mt-0.5">Uses 1 Life · first is free · max 3 per year</p>
+                <p className="text-xs text-gray-400 mt-0.5">Uses 1 Life · max 9 per year</p>
               </div>
               <button type="button" onClick={() => setNeedVolunteer(!needVolunteer)}
                 className={`w-12 h-7 rounded-full transition-colors relative ${needVolunteer ? 'bg-green-500' : 'bg-gray-200'}`}>
@@ -197,10 +206,6 @@ export default function ReportPage() {
           </div>
 
           {error && <p className="text-sm text-red-600 bg-red-50 px-4 py-3 rounded-xl">{error}</p>}
-
-          <p className="text-xs text-gray-400 text-center">
-            Limit: 1 report per household per month. Reports over 5 are flagged for review.
-          </p>
 
           <button type="submit" disabled={loading}
             className="w-full py-4 rounded-2xl text-white text-sm font-medium transition-all active:scale-95"
