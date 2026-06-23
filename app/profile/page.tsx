@@ -17,7 +17,30 @@ export default function ProfilePage() {
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) { router.push('/'); return }
       setUser(data.user)
-      const { data: p } = await supabase.from('profiles').select('*').eq('id', data.user.id).single()
+      
+      // Try to get profile
+      let { data: p } = await supabase.from('profiles').select('*').eq('id', data.user.id).single()
+      
+      // If no profile exists, create one
+      if (!p) {
+        const { data: maxData } = await supabase.from('profiles').select('neighbor_number').order('neighbor_number', { ascending: false }).limit(1)
+        const nextNum = maxData && maxData.length > 0 ? (maxData[0].neighbor_number || 44) + 1 : 45
+        
+        await supabase.from('profiles').insert({
+          id: data.user.id,
+          email: data.user.email,
+          neighbor_number: nextNum,
+          community_code: 'ADMIN',
+          access_level: 'C',
+          lives_remaining: 1,
+          report_count: 0,
+          report_weight: 5.0,
+          is_anonymous: false,
+        })
+        const { data: newP } = await supabase.from('profiles').select('*').eq('id', data.user.id).single()
+        p = newP
+      }
+      
       if (p) { setProfile(p); setIsAnon(p.is_anonymous || false) }
       setLoading(false)
     })
@@ -29,6 +52,11 @@ export default function ProfilePage() {
       is_anonymous: isAnon,
       updated_at: new Date().toISOString()
     }).eq('id', user.id)
+    
+    // Refresh profile
+    const { data: p } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+    if (p) setProfile(p)
+    
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
     setSaving(false)
@@ -36,7 +64,8 @@ export default function ProfilePage() {
 
   if (loading) return <div className="min-h-screen flex items-center justify-center text-sm text-gray-400">Loading...</div>
 
-  const displayName = profile?.is_anonymous ? `Neighbor${profile?.neighbor_number}` : user?.email
+  const neighborNum = profile?.neighbor_number || 45
+  const displayName = isAnon ? `Neighbor${neighborNum}` : (user?.email || '')
   const lives = profile?.lives_remaining || 1
 
   return (
@@ -54,11 +83,11 @@ export default function ProfilePage() {
           <p className="text-xs font-medium text-gray-500 mb-3">Your identity</p>
           <div className="flex items-center gap-3 mb-4">
             <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center text-lg font-medium text-green-700">
-              {isAnon ? '🕵️' : user?.email?.[0]?.toUpperCase()}
+              {isAnon ? '🕵️' : (user?.email?.[0]?.toUpperCase() || '?')}
             </div>
             <div>
               <p className="text-sm font-medium text-gray-800">{displayName}</p>
-              <p className="text-xs text-gray-400">{isAnon ? 'Ultra anonymous mode' : 'Standard mode'}</p>
+              <p className="text-xs text-gray-400">{isAnon ? `Ultra anonymous · Neighbor${neighborNum}` : 'Standard mode'}</p>
             </div>
           </div>
 
@@ -66,7 +95,7 @@ export default function ProfilePage() {
           <div className="flex items-center justify-between py-3 border-t border-gray-50">
             <div>
               <p className="text-sm font-medium text-gray-700">Ultra anonymous mode</p>
-              <p className="text-xs text-gray-400 mt-0.5">Show as Neighbor{profile?.neighbor_number} instead of your email</p>
+              <p className="text-xs text-gray-400 mt-0.5">Show as Neighbor{neighborNum} instead of your email</p>
             </div>
             <button onClick={() => setIsAnon(!isAnon)}
               className={`w-12 h-7 rounded-full transition-colors relative ${isAnon ? 'bg-green-500' : 'bg-gray-200'}`}>
@@ -82,9 +111,10 @@ export default function ProfilePage() {
             {[...Array(3)].map((_, i) => (
               <span key={i} className={`text-2xl ${i < lives ? 'opacity-100' : 'opacity-20'}`}>❤️</span>
             ))}
+            {lives > 3 && <span className="text-xs text-green-600 font-medium">+{lives - 3} bonus</span>}
           </div>
           <p className="text-xs text-gray-400 leading-relaxed">
-            Each Life allows one free volunteer help request per year. Lives can be gifted by volunteers or managers when you need extra support.
+            We encourage only those truly in need to use their Life. If you have one and don't need it — gift it to a neighbor who does!
           </p>
         </div>
 
@@ -107,7 +137,7 @@ export default function ProfilePage() {
         <div className="bg-white rounded-2xl border border-gray-100 p-4">
           <p className="text-xs font-medium text-gray-500 mb-2">Access level</p>
           <span className="inline-block px-3 py-1.5 rounded-lg bg-green-50 text-green-700 text-xs font-medium">
-            Level {profile?.access_level || 'C'} — Resident
+            Level {profile?.access_level || 'C'} — {profile?.access_level === 'A' ? 'Admin' : profile?.access_level === 'B1' ? 'Manager' : profile?.access_level === 'B2' ? 'Overseer' : 'Resident'}
           </span>
         </div>
 
