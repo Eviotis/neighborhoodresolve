@@ -21,7 +21,7 @@ export default function AdminPage() {
   async function loadData() {
     const [casesRes, profilesRes] = await Promise.all([
       supabase.from('cases').select('*').order('created_at', { ascending: false }),
-      supabase.from('profiles').select('*').order('created_at', { ascending: false }),
+      supabase.from('profiles').select('id, email, is_anonymous, neighbor_number, access_level, community_code, lives_remaining, report_count, report_weight'),
     ])
     setCases(casesRes.data || [])
     setProfiles(profilesRes.data || [])
