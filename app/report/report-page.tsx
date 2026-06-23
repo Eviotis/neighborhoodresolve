@@ -1,5 +1,5 @@
 'use client'
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import BottomNav from '@/components/BottomNav'
@@ -21,18 +21,9 @@ export default function ReportPage() {
   const [location, setLocation] = useState('')
   const [description, setDescription] = useState('')
   const [needVolunteer, setNeedVolunteer] = useState(false)
-  const [photos, setPhotos] = useState<File[]>([])
-  const [photoPreviews, setPhotoPreviews] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
-  const fileRef = useRef<HTMLInputElement>(null)
-
-  function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(e.target.files || []).slice(0, 3)
-    setPhotos(files)
-    setPhotoPreviews(files.map(f => URL.createObjectURL(f)))
-  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -42,29 +33,23 @@ export default function ReportPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push('/'); return }
 
-    // Check abuse — report count
-    const { data: profile } = await supabase.from('profiles').select('report_count, report_weight').eq('id', user.id).single()
-    if (profile && profile.report_count >= 10) {
-      setError('You have reached the maximum number of reports allowed. Please contact your neighborhood manager.')
-      setLoading(false)
-      return
-    }
-
-    // Check 1-per-month
+    // Check 1-per-month rule
     const startOfMonth = new Date()
     startOfMonth.setDate(1)
-    startOfMonth.setHours(0,0,0,0)
-    const { count } = await supabase.from('cases').select('*', { count: 'exact', head: true }).gte('created_at', startOfMonth.toISOString())
-    if ((count || 0) >= 1 && profile?.report_count > 0) {
+    startOfMonth.setHours(0, 0, 0, 0)
+
+    const { count } = await supabase
+      .from('cases')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', startOfMonth.toISOString())
+
+    if ((count || 0) >= 1) {
       setError('You have already submitted a report this month. One report per household per month keeps the system fair.')
       setLoading(false)
       return
     }
 
-    // Calculate weight
-    const reportCount = (profile?.report_count || 0) + 1
-    const weight = reportCount > 5 ? 2.0 : reportCount > 3 ? 3.0 : 5.0
-
+    // Submit — reporter identity stripped from the visible record
     const { error: insertError } = await supabase.from('cases').insert({
       category,
       location,
@@ -72,31 +57,14 @@ export default function ReportPage() {
       need_volunteer: needVolunteer,
       status: 'open',
       strike_count: 0,
-      priority_score: weight,
       created_at: new Date().toISOString(),
     })
 
     if (insertError) {
       setError('Something went wrong. Please try again.')
-      setLoading(false)
-      return
+    } else {
+      setSubmitted(true)
     }
-
-    // Update report count and weight
-    if (profile) {
-      await supabase.from('profiles').update({
-        report_count: reportCount,
-        report_weight: weight,
-        updated_at: new Date().toISOString()
-      }).eq('id', user.id)
-    }
-
-    // Alert if abuse threshold reached
-    if (reportCount >= 5) {
-      console.log('Abuse threshold reached — alert MGR and ADMIN')
-    }
-
-    setSubmitted(true)
     setLoading(false)
   }
 
@@ -129,6 +97,7 @@ export default function ReportPage() {
       </div>
 
       <div className="max-w-lg mx-auto px-4 py-4">
+        {/* Anonymity banner */}
         <div className="bg-green-50 border border-green-100 rounded-2xl px-4 py-3 mb-4 flex gap-3">
           <span className="text-green-600 text-lg">🔒</span>
           <p className="text-xs text-green-700 leading-relaxed">
@@ -164,30 +133,11 @@ export default function ReportPage() {
                 className="w-full px-3 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-green-500 resize-none" required/>
             </div>
 
-            {/* Photo upload */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Photos <span className="font-normal text-gray-400">(optional · up to 3 · before photos)</span>
-              </label>
-              <button type="button" onClick={() => fileRef.current?.click()}
-                className="w-full py-3 rounded-xl border-2 border-dashed border-gray-200 text-xs text-gray-400 hover:border-green-300 transition-colors">
-                📷 Tap to add photos
-              </button>
-              <input ref={fileRef} type="file" accept="image/*" multiple onChange={handlePhotoChange} className="hidden"/>
-              {photoPreviews.length > 0 && (
-                <div className="grid grid-cols-3 gap-2 mt-2">
-                  {photoPreviews.map((p, i) => (
-                    <img key={i} src={p} className="rounded-xl w-full h-20 object-cover" alt={`Preview ${i+1}`}/>
-                  ))}
-                </div>
-              )}
-            </div>
-
             {/* Volunteer toggle */}
             <div className="flex items-center justify-between py-2">
               <div>
                 <p className="text-sm font-medium text-gray-700">Request volunteer help?</p>
-                <p className="text-xs text-gray-400 mt-0.5">Uses 1 Life · first is free · max 3 per year</p>
+                <p className="text-xs text-gray-400 mt-0.5">First visit is free · one per year per household</p>
               </div>
               <button type="button" onClick={() => setNeedVolunteer(!needVolunteer)}
                 className={`w-12 h-7 rounded-full transition-colors relative ${needVolunteer ? 'bg-green-500' : 'bg-gray-200'}`}>
@@ -199,7 +149,7 @@ export default function ReportPage() {
           {error && <p className="text-sm text-red-600 bg-red-50 px-4 py-3 rounded-xl">{error}</p>}
 
           <p className="text-xs text-gray-400 text-center">
-            Limit: 1 report per household per month. Reports over 5 are flagged for review.
+            Limit: 1 report per household per month. Repeated issues for the same address are flagged automatically.
           </p>
 
           <button type="submit" disabled={loading}

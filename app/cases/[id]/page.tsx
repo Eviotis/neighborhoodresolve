@@ -13,7 +13,8 @@ export default function CaseDetailPage() {
   const [caseData, setCaseData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState(false)
-  const [note, setNote] = useState('')
+  const [prTimeline, setPrTimeline] = useState('')
+  const [showTimelineForm, setShowTimelineForm] = useState(false)
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -59,8 +60,31 @@ export default function CaseDetailPage() {
     setUpdating(false)
   }
 
+  async function submitTimeline() {
+    if (!prTimeline.trim()) return
+    setUpdating(true)
+    await supabase.from('cases').update({
+      pr_timeline: prTimeline,
+      status: 'pending',
+      updated_at: new Date().toISOString()
+    }).eq('id', params.id)
+    setShowTimelineForm(false)
+    await loadCase()
+    setUpdating(false)
+  }
+
+  async function togglePRHelp() {
+    setUpdating(true)
+    await supabase.from('cases').update({
+      pr_needs_help: !caseData.pr_needs_help,
+      updated_at: new Date().toISOString()
+    }).eq('id', params.id)
+    await loadCase()
+    setUpdating(false)
+  }
+
   const getStepIndex = (status: string) => {
-    const map: Record<string, number> = { open: 1, pending: 2, strike: 3, escalated: 3, resolved: 4 }
+    const map: Record<string, number> = { open: 1, pending: 2, strike: 3, escalated: 3, resolved: 5 }
     return map[status] || 1
   }
 
@@ -121,7 +145,7 @@ export default function CaseDetailPage() {
                       <span className={`text-xs font-medium ${i === stepIndex ? 'text-green-600' : 'text-gray-300'}`}>{i+1}</span>
                     )}
                   </div>
-                  <p className="text-center leading-tight" style={{fontSize:'9px', color: i <= stepIndex ? '#374151' : '#d1d5db'}}>{step}</p>
+                  <p className="text-center leading-tight" style={{fontSize:'9px', color: i < stepIndex ? '#374151' : '#d1d5db'}}>{step}</p>
                 </div>
               ))}
             </div>
@@ -134,27 +158,76 @@ export default function CaseDetailPage() {
           <p className="text-sm text-gray-700 leading-relaxed">{caseData.description}</p>
           {caseData.need_volunteer && (
             <div className="mt-3 flex items-center gap-2 text-xs text-blue-600 bg-blue-50 px-3 py-2 rounded-xl">
-              <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0"/>
-              </svg>
-              Volunteer assistance requested
+              🤝 Volunteer assistance requested
+            </div>
+          )}
+          {caseData.photo_urls && caseData.photo_urls.length > 0 && (
+            <div className="mt-3 grid grid-cols-3 gap-2">
+              {caseData.photo_urls.map((url: string, i: number) => (
+                <img key={i} src={url} className="rounded-xl w-full h-20 object-cover" alt={`Photo ${i+1}`}/>
+              ))}
             </div>
           )}
         </div>
 
+        {/* PR Timeline response */}
+        {caseData.pr_timeline && (
+          <div className="bg-blue-50 border border-blue-100 rounded-2xl px-4 py-3">
+            <p className="text-xs font-medium text-blue-700 mb-1">📅 Resident's resolution timeline</p>
+            <p className="text-sm text-blue-800">{caseData.pr_timeline}</p>
+          </div>
+        )}
+
+        {/* PR needs help */}
+        {caseData.pr_needs_help && (
+          <div className="bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3">
+            <p className="text-xs font-medium text-amber-700">🙏 Resident has indicated they need help and welcome volunteer assistance</p>
+          </div>
+        )}
+
+        {/* PR response form */}
+        {!isResolved && !showTimelineForm && (
+          <button onClick={() => setShowTimelineForm(true)}
+            className="w-full py-3 rounded-2xl text-xs font-medium border border-blue-200 bg-blue-50 text-blue-700">
+            📅 I am the resident — submit my resolution timeline
+          </button>
+        )}
+
+        {showTimelineForm && (
+          <div className="bg-white rounded-2xl border border-gray-100 p-4 space-y-3">
+            <p className="text-xs font-medium text-gray-700">Your resolution timeline</p>
+            <textarea value={prTimeline} onChange={e => setPrTimeline(e.target.value)}
+              placeholder="e.g. I will fix this by Saturday. I need 3 days to get materials."
+              rows={3} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-green-500 resize-none"/>
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
+                <input type="checkbox" checked={caseData.pr_needs_help} onChange={togglePRHelp} className="accent-green-600"/>
+                I have an emergency and welcome volunteer help
+              </label>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => setShowTimelineForm(false)} className="flex-1 py-2.5 rounded-xl text-xs border border-gray-200 text-gray-500">Cancel</button>
+              <button onClick={submitTimeline} disabled={updating}
+                className="flex-1 py-2.5 rounded-xl text-xs font-medium text-white" style={{background:'#1D9E75'}}>
+                Submit timeline
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Strike warning */}
         {caseData.strike_count >= 2 && !isResolved && (
           <div className="bg-red-50 border border-red-100 rounded-2xl px-4 py-3">
-            <p className="text-xs text-red-700 font-medium mb-1">⚠️ {caseData.strike_count} strikes on record</p>
-            <p className="text-xs text-red-600">One more unresolved strike triggers automatic escalation to the judge panel.</p>
+            <p className="text-xs text-red-700 font-medium">⚠️ {caseData.strike_count} strikes on record</p>
+            <p className="text-xs text-red-600 mt-1">One more unresolved strike triggers automatic escalation to the judge panel.</p>
           </div>
         )}
 
         {/* Judge panel notice */}
         {isEscalated && (
           <div className="bg-purple-50 border border-purple-100 rounded-2xl px-4 py-3">
-            <p className="text-xs text-purple-700 font-medium mb-1">⚖️ Judge panel active</p>
-            <p className="text-xs text-purple-600">This case has been escalated. A randomly selected panel of 3 residents will review and issue a ruling.</p>
+            <p className="text-xs text-purple-700 font-medium">⚖️ Judge panel active</p>
+            <p className="text-xs text-purple-600 mt-1">A randomly selected panel of 3 residents will review and issue a ruling.</p>
             <Link href="/judge" className="mt-2 inline-block text-xs text-purple-700 font-medium underline">View judge panel →</Link>
           </div>
         )}
@@ -184,10 +257,15 @@ export default function CaseDetailPage() {
           </div>
         )}
 
+        {/* Resolved state */}
         {isResolved && (
-          <div className="bg-green-50 rounded-2xl px-4 py-4 text-center">
+          <div className="bg-green-50 rounded-2xl px-4 py-4 text-center space-y-3">
             <p className="text-green-700 font-medium text-sm">✓ Case resolved</p>
-            <p className="text-xs text-green-600 mt-1">This record will be deleted automatically after 30 days.</p>
+            <p className="text-xs text-green-600">This record will be deleted automatically after 30 days.</p>
+            <Link href="/cases"
+              className="inline-block px-5 py-2.5 rounded-xl text-xs font-medium text-white" style={{background:'#1D9E75'}}>
+              See other open cases
+            </Link>
           </div>
         )}
       </div>
