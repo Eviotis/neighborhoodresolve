@@ -71,7 +71,7 @@ export default function Home() {
     <main className="min-h-screen bg-white">
       <div className="px-6 pt-16 pb-10 text-center max-w-lg mx-auto">
         <div className="mb-6">
-          <img src="/logo.svg" alt="NeighborhoodResolve" width="120" height="120" style={{borderRadius:'50%'}}/>
+          <img src="/icon-192.png" alt="NeighborhoodResolve" width="100" height="100" style={{borderRadius:'50%'}}/>
         </div>
         <h1 className="text-3xl font-semibold text-gray-900 mb-3">NeighborhoodResolve</h1>
         <p className="text-lg text-gray-500 mb-2">Friendly. Anonymous. Fair.</p>
