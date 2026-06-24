@@ -114,11 +114,16 @@ export default function Home() {
           <p className="text-xs text-green-700 leading-relaxed mb-5">
             Whether your neighborhood has an HOA or not, NeighborhoodResolve helps everyone communicate better, resolve concerns faster, and build the kind of trust that makes a neighborhood feel like home.
           </p>
-          <a href="mailto:johnanagnostou@gmail.com?subject=Tell Us About Your Community - NeighborhoodResolve&body=Hello,%0A%0AWe would love to learn more about your community and how NeighborhoodResolve can help.%0A%0ACommunity Name:%0ANumber of homes:%0ALocation:%0AHow can we help?%0A%0AThank you."
-            className="inline-block px-5 py-2.5 rounded-xl text-xs font-medium border border-green-600 text-green-700 bg-white">
-            Tell Us About Your Community →
+          <div className="mb-5">
+            <p className="text-xs text-green-700 leading-relaxed">Enter NeighborhoodResolve and give it a test run.</p>
+            <p className="text-xs text-green-700 leading-relaxed">Most questions are best answered through experience.</p>
+            <p className="text-xs text-green-600 leading-relaxed mt-2">No credit card. No sales presentations. No obligations.</p>
+            <p className="text-xs font-semibold text-green-700 leading-relaxed">Free for residents. Always.</p>
+          </div>
+          <a href="mailto:johnanagnostou@gmail.com?subject=NeighborhoodResolve Community Inquiry&body=Hello,%0A%0AWe would love to learn more about your community and how NeighborhoodResolve can help.%0A%0ACommunity Name:%0ANumber of homes:%0ALocation:%0AHow can we help?%0A%0AThank you."
+            className="inline-block px-4 py-2 rounded-lg text-xs font-medium border border-green-500 text-green-600 bg-white">
+            Contact Us
           </a>
-          <p className="text-xs text-green-600 mt-3 opacity-70">For additional questions on how we can complement your mission, feel free to contact us.</p>
           <div className="mt-4 pt-4 border-t border-green-100">
             <p className="text-sm font-bold text-green-800 tracking-wide uppercase">Free for residents. Always.</p>
             <p className="text-xs text-green-600 opacity-60 mt-1 leading-relaxed">Communities and associations receive a complimentary 90-day trial before administrative plans begin.</p>
@@ -128,8 +133,8 @@ export default function Home() {
 
       <div className="px-6 pb-8 text-center">
         <p className="text-xs text-gray-400">© 2026 NeighborhoodResolve</p>
-        <p className="text-xs text-gray-300 mt-1">Homes need more than rules. They need relationships.</p>
-        <p className="text-xs text-gray-300">Neighborhoods need more than houses. They need links.</p>
+        <p className="text-xs text-gray-500 mt-1 font-medium">Homes need more than rules. They need relationships.</p>
+        <p className="text-xs text-gray-500 font-medium">Neighborhoods need more than houses. They need links.</p>
       </div>
     </main>
   )
