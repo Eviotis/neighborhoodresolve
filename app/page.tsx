@@ -111,13 +111,14 @@ export default function Home() {
       <div className="px-6 pb-10 max-w-lg mx-auto">
         <div className="bg-green-50 rounded-2xl p-6 text-center">
           <p className="text-sm font-medium text-green-800 mb-3">Built for residents without HOAs — and a powerful complement for HOA boards who want stronger resident engagement.</p>
-          <p className="text-xs text-green-700 leading-relaxed mb-4">
+          <p className="text-xs text-green-700 leading-relaxed mb-5">
             Whether your neighborhood has an HOA or not, NeighborhoodResolve helps everyone communicate better, resolve concerns faster, and build the kind of trust that makes a neighborhood feel like home.
           </p>
-          <a href="mailto:johnanagnostou@gmail.com?subject=HOA Partnership Inquiry - NeighborhoodResolve&body=Hello,%0A%0AI manage an HOA and would like to learn how NeighborhoodResolve can work alongside our community.%0A%0AHOA Name:%0ANumber of homes:%0ALocation:%0A%0AThank you."
-            className="inline-block px-5 py-2.5 rounded-xl text-xs font-medium text-white" style={{background:'#1D9E75'}}>
-            Contact us — HOA managers →
+          <a href="mailto:johnanagnostou@gmail.com?subject=Tell Us About Your Community - NeighborhoodResolve&body=Hello,%0A%0AWe would love to learn more about your community and how NeighborhoodResolve can help.%0A%0ACommunity Name:%0ANumber of homes:%0ALocation:%0AHow can we help?%0A%0AThank you."
+            className="inline-block px-5 py-2.5 rounded-xl text-xs font-medium border border-green-600 text-green-700 bg-white">
+            Tell Us About Your Community →
           </a>
+          <p className="text-xs text-green-600 mt-3 opacity-70">For additional questions on how we can complement your mission, feel free to contact us.</p>
         </div>
       </div>
 
