@@ -70,7 +70,7 @@ export default function Home() {
   if (mode === 'landing') return (
     <main className="min-h-screen bg-white">
       <div className="px-6 pt-16 pb-10 text-center max-w-lg mx-auto">
-        <div className="mb-6">
+        <div className="mb-6 flex justify-center">
           <img src="/icon-192.png" alt="NeighborhoodResolve" width="100" height="100" style={{borderRadius:'50%'}}/>
         </div>
         <h1 className="text-3xl font-semibold text-gray-900 mb-3">NeighborhoodResolve</h1>
@@ -112,13 +112,16 @@ export default function Home() {
 
       <div className="px-6 pb-10 max-w-lg mx-auto">
         <div className="bg-green-50 rounded-2xl p-6 text-center">
-          <p className="text-sm font-medium text-green-800 mb-2">Already have an HOA?</p>
+          <p className="text-sm font-medium text-green-800 mb-3">Built for residents. Works with HOAs too.</p>
           <p className="text-xs text-green-700 leading-relaxed mb-4">
-            Contact us NOW to be among the first HOAs to work alongside our platform — before your residents discover it on their own. Early adopters enjoy very reasonable discounted rates that won't increase — ever. This guarantee applies only to early adopters who join during our launch period. We remove friction, automate workflows, and make your board's job easier.
+            Our app is designed so residents never need an HOA — caring neighbors who democratically solve issues keep their community in top shape, removing friction and bad feelings. Residents have the power, anonymity prevents conflict, and good will gets issues resolved fast.
           </p>
-          <a href="mailto:johnanagnostou@gmail.com?subject=NeighborhoodResolve - Community Inquiry"
+          <p className="text-xs text-green-700 leading-relaxed mb-4">
+            If you live in an HOA, join and see how efficient our platform is — especially once your community reaches 5 or more members. If you manage an HOA and want to explore how it can work alongside our app, send us a message.
+          </p>
+          <a href="mailto:johnanagnostou@gmail.com?subject=HOA Partnership Inquiry - NeighborhoodResolve&body=Hello,%0A%0AI manage an HOA and would like to learn how NeighborhoodResolve can work alongside our community.%0A%0AHOA Name:%0ANumber of homes:%0ALocation:%0A%0AThank you."
             className="inline-block px-5 py-2.5 rounded-xl text-xs font-medium text-white" style={{background:'#1D9E75'}}>
-            Contact us to get started →
+            Contact us — HOA managers →
           </a>
         </div>
       </div>
