@@ -81,9 +81,10 @@ export default function Home() {
         </div>
         <h1 className="text-3xl font-semibold text-gray-900 mb-3">NeighborhoodResolve</h1>
         <p className="text-lg text-gray-500 mb-2">Friendly. Anonymous. Fair.</p>
-        <p className="text-sm text-gray-400 leading-relaxed mb-8">
-          The smarter way for neighborhoods to resolve issues, organize volunteers, and build stronger communities — without the politics of traditional HOAs.
+        <p className="text-sm text-gray-400 leading-relaxed mb-4">
+          The smarter way for neighborhoods to resolve issues, organize volunteers, and build stronger communities — without politics and kings. Residents in power of their own destiny through a bulletproof democratic system.
         </p>
+        <p className="text-sm font-medium text-green-600 mb-8">Give it a shot — it's free for 90 days. No credit card required.</p>
         <div className="flex gap-3 justify-center">
           <button onClick={() => setMode('login')}
             className="px-6 py-3 rounded-xl text-white text-sm font-medium" style={{background:'#1D9E75'}}>
@@ -123,7 +124,7 @@ export default function Home() {
         <div className="bg-green-50 rounded-2xl p-6 text-center">
           <p className="text-sm font-medium text-green-800 mb-2">Already have an HOA?</p>
           <p className="text-xs text-green-700 leading-relaxed mb-4">
-            NeighborhoodResolve works alongside existing HOAs — removing friction, automating workflows, and making your board's job easier. Try it free for 90 days.
+            Contact us NOW to be among the first HOAs to work alongside our platform — before your residents discover it on their own. Early adopters enjoy very reasonable discounted rates that won't increase — ever. This guarantee applies only to early adopters who join during our launch period. We remove friction, automate workflows, and make your board's job easier.
           </p>
           <a href="mailto:johnanagnostou@gmail.com?subject=NeighborhoodResolve - Community Inquiry"
             className="inline-block px-5 py-2.5 rounded-xl text-xs font-medium text-white" style={{background:'#1D9E75'}}>
