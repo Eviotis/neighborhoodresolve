@@ -70,11 +70,8 @@ export default function Home() {
   if (mode === 'landing') return (
     <main className="min-h-screen bg-white">
       <div className="px-6 pt-16 pb-10 text-center max-w-lg mx-auto">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-6" style={{background:'#1D9E75'}}>
-          <svg width="32" height="32" fill="none" viewBox="0 0 24 24">
-            <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M9 22V12h6v10" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
+        <div className="mb-6">
+          <img src="/logo.svg" alt="NeighborhoodResolve" width="120" height="120" style={{borderRadius:'50%'}}/>
         </div>
         <h1 className="text-3xl font-semibold text-gray-900 mb-3">NeighborhoodResolve</h1>
         <p className="text-lg text-gray-500 mb-2">Friendly. Anonymous. Fair.</p>
