@@ -118,7 +118,6 @@ export default function Home() {
             <p className="text-xs text-green-700 leading-relaxed">Enter NeighborhoodResolve and give it a test run.</p>
             <p className="text-xs text-green-700 leading-relaxed">Most questions are best answered through experience.</p>
             <p className="text-xs text-green-600 leading-relaxed mt-2">No credit card. No sales presentations. No obligations.</p>
-            <p className="text-xs font-semibold text-green-700 leading-relaxed">Free for residents. Always.</p>
           </div>
           <a href="mailto:johnanagnostou@gmail.com?subject=NeighborhoodResolve Community Inquiry&body=Hello,%0A%0AWe would love to learn more about your community and how NeighborhoodResolve can help.%0A%0ACommunity Name:%0ANumber of homes:%0ALocation:%0AHow can we help?%0A%0AThank you."
             className="inline-block px-4 py-2 rounded-lg text-xs font-medium border border-green-500 text-green-600 bg-white">
