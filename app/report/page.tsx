@@ -1,8 +1,9 @@
 'use client'
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import BottomNav from '@/components/BottomNav'
+import Link from 'next/link'
 
 const categories = [
   'Lawn & landscaping',
@@ -38,7 +39,26 @@ export default function ReportPage() {
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
+  const [volunteerCount, setVolunteerCount] = useState(0)
+  const [reportCount, setReportCount] = useState(0)
+  const [throttled, setThrottled] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    async function loadData() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const [volRes, profileRes] = await Promise.all([
+        supabase.from('volunteers').select('id'),
+        supabase.from('profiles').select('report_count').eq('id', user.id).single()
+      ])
+      setVolunteerCount((volRes.data || []).length)
+      const count = profileRes.data?.report_count || 0
+      setReportCount(count)
+      setThrottled(count >= 5)
+    }
+    loadData()
+  }, [])
 
   function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files || []).slice(0, 3)
@@ -70,20 +90,19 @@ export default function ReportPage() {
     if (!user) { router.push('/'); return }
 
     const { data: profile } = await supabase.from('profiles').select('report_count, report_weight').eq('id', user.id).single()
+    const currentCount = profile?.report_count || 0
 
-    if (profile && profile.report_count >= 10) {
-      setError('Please contact your neighborhood manager to submit additional reports.')
+    if (currentCount >= 10) {
+      setError('You have reached the maximum number of reports. Please contact your neighborhood manager.')
       setLoading(false)
       return
     }
 
-    const reportCount = (profile?.report_count || 0) + 1
-    const weight = reportCount > 5 ? 2.0 : reportCount > 3 ? 3.0 : 5.0
+    const newCount = currentCount + 1
+    const weight = newCount > 5 ? 2.0 : newCount > 3 ? 3.0 : 5.0
 
     const { data: newCase, error: insertError } = await supabase.from('cases').insert({
-      category,
-      location,
-      description,
+      category, location, description,
       need_volunteer: needVolunteer,
       status: 'open',
       strike_count: 0,
@@ -105,64 +124,80 @@ export default function ReportPage() {
       }
     }
 
-    if (profile) {
-      await supabase.from('profiles').update({
-        report_count: reportCount,
-        report_weight: weight,
-        updated_at: new Date().toISOString()
-      }).eq('id', user.id)
-    }
+    await supabase.from('profiles').update({
+      report_count: newCount,
+      report_weight: weight,
+      updated_at: new Date().toISOString()
+    }).eq('id', user.id)
 
-    // Get Messenger and ADMIN emails to notify
-    const { data: managers } = await supabase
-      .from('profiles')
-      .select('email')
-      .in('access_level', ['A', 'B1', 'B2'])
-
+    // Notify ALL managers and ADMIN of every submission
+    const { data: managers } = await supabase.from('profiles').select('email').in('access_level', ['A', 'B1', 'B2'])
     if (managers && managers.length > 0) {
-      const emails = managers.map(m => m.email).filter(Boolean)
-      const caseUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://project-76shj.vercel.app'}/cases/${newCase.id}`
-      
-      await sendNotification(
-        emails,
-        `New case filed: ${category}`,
-        `
-          <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto;">
-            <div style="background: #1D9E75; padding: 20px; border-radius: 12px 12px 0 0;">
-              <h1 style="color: white; margin: 0; font-size: 18px;">New case filed</h1>
-            </div>
-            <div style="background: #f9f9f9; padding: 20px; border-radius: 0 0 12px 12px; border: 1px solid #eee;">
-              <p style="margin: 0 0 12px; color: #374151;"><strong>Category:</strong> ${category}</p>
-              <p style="margin: 0 0 12px; color: #374151;"><strong>Location:</strong> ${location}</p>
-              <p style="margin: 0 0 12px; color: #374151;"><strong>Description:</strong> ${description}</p>
-              <p style="margin: 0 0 20px; color: #374151;"><strong>Volunteer help requested:</strong> ${needVolunteer ? 'Yes' : 'No'}</p>
-              <a href="${caseUrl}" style="background: #1D9E75; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; display: inline-block;">
-                View case →
-              </a>
-              <p style="margin: 20px 0 0; font-size: 12px; color: #9CA3AF;">
-                Reporter identity is protected. This notification was sent to all Messengers and Admins.
-              </p>
-            </div>
+      const emails = managers.map((m: any) => m.email).filter(Boolean)
+      const caseUrl = `https://project-76shj.vercel.app/cases/${newCase.id}`
+      await sendNotification(emails, `New case filed: ${category}`, `
+        <div style="font-family:sans-serif;max-width:500px;margin:0 auto">
+          <div style="background:#1D9E75;padding:20px;border-radius:12px 12px 0 0">
+            <h1 style="color:white;margin:0;font-size:18px">New case filed</h1>
           </div>
-        `
-      )
+          <div style="background:#f9f9f9;padding:20px;border-radius:0 0 12px 12px;border:1px solid #eee">
+            <p style="margin:0 0 12px;color:#374151"><strong>Category:</strong> ${category}</p>
+            <p style="margin:0 0 12px;color:#374151"><strong>Location:</strong> ${location}</p>
+            <p style="margin:0 0 12px;color:#374151"><strong>Description:</strong> ${description}</p>
+            <p style="margin:0 0 12px;color:#374151"><strong>Report #${newCount}</strong> from this resident · Weight: ${weight}%</p>
+            <a href="${caseUrl}" style="background:#1D9E75;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">View case →</a>
+            <p style="margin:20px 0 0;font-size:12px;color:#9CA3AF">Reporter identity protected. Sent to all Messengers and Admins.</p>
+          </div>
+        </div>
+      `)
     }
 
-    // Alert if approaching abuse threshold
-    if (reportCount >= 5) {
+    // Abuse alert at threshold
+    if (newCount >= 5) {
       const { data: admins } = await supabase.from('profiles').select('email').eq('access_level', 'A')
       if (admins && admins.length > 0) {
         await sendNotification(
-          admins.map(a => a.email).filter(Boolean),
-          `⚠️ Possible abuse alert — high report count`,
-          `<p>A resident has submitted ${reportCount} reports. Please review for possible abuse.</p>`
+          admins.map((a: any) => a.email).filter(Boolean),
+          `⚠️ High report count alert`,
+          `<p>A resident has submitted <strong>${newCount} reports</strong>. Please review for possible abuse. Their report weight has been reduced to ${weight}%.</p>`
         )
       }
     }
 
+    setReportCount(newCount)
+    if (newCount >= 5) setThrottled(true)
     setSubmitted(true)
     setLoading(false)
   }
+
+  // Throttled view
+  if (throttled && !submitted) return (
+    <div className="min-h-screen bg-gray-50 pb-24">
+      <div className="bg-white border-b border-gray-100 px-4 pt-12 pb-4">
+        <div className="max-w-lg mx-auto flex items-center gap-2">
+          <Link href="/dashboard" className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-white" style={{background:'#1D9E75'}}>← Home</Link>
+          <h1 className="text-lg font-semibold text-gray-900">Report an issue</h1>
+        </div>
+      </div>
+      <div className="max-w-lg mx-auto px-4 py-8 text-center">
+        <div className="w-14 h-14 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <span className="text-2xl">⚠️</span>
+        </div>
+        <h2 className="text-base font-semibold text-gray-900 mb-2">Report limit reached</h2>
+        <p className="text-sm text-gray-500 mb-6 leading-relaxed">
+          You have submitted {reportCount} reports. To maintain fairness in the community, please contact your neighborhood manager to discuss any additional concerns.
+        </p>
+        <div className="bg-amber-50 border border-amber-100 rounded-2xl px-4 py-4 text-left mb-6">
+          <p className="text-xs text-amber-700 font-medium mb-1">What happens now?</p>
+          <p className="text-xs text-amber-600 leading-relaxed">Your manager will review your previous reports and work with you on next steps. Your anonymity is fully protected throughout this process.</p>
+        </div>
+        <Link href="/dashboard" className="inline-block px-6 py-3 rounded-xl text-white text-sm font-medium" style={{background:'#1D9E75'}}>
+          Back to dashboard
+        </Link>
+      </div>
+      <BottomNav />
+    </div>
+  )
 
   if (submitted) return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 pb-24">
@@ -172,9 +207,14 @@ export default function ReportPage() {
         </svg>
       </div>
       <h2 className="text-lg font-semibold text-gray-900 mb-2">Report submitted</h2>
-      <p className="text-sm text-gray-500 text-center mb-6 leading-relaxed">
-        Your report has been sent anonymously to the Messenger on duty. Your identity will never be revealed.
+      <p className="text-sm text-gray-500 text-center mb-2 leading-relaxed">
+        Your report has been sent anonymously to the Messenger on duty.
       </p>
+      {reportCount >= 3 && (
+        <p className="text-xs text-amber-600 bg-amber-50 px-4 py-2 rounded-xl text-center mb-4">
+          You have submitted {reportCount} reports. After {5 - reportCount} more, you will need to contact your manager for additional reporting.
+        </p>
+      )}
       <button onClick={() => router.push('/dashboard')}
         className="px-6 py-3 rounded-xl text-white text-sm font-medium" style={{background:'#1D9E75'}}>
         Back to dashboard
@@ -186,9 +226,12 @@ export default function ReportPage() {
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
       <div className="bg-white border-b border-gray-100 px-4 pt-12 pb-4">
-        <div className="max-w-lg mx-auto">
-          <h1 className="text-lg font-semibold text-gray-900">Report an issue</h1>
-          <p className="text-xs text-gray-400 mt-0.5">Always anonymous</p>
+        <div className="max-w-lg mx-auto flex items-center gap-2">
+          <Link href="/dashboard" className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-white" style={{background:'#1D9E75'}}>← Home</Link>
+          <div>
+            <h1 className="text-lg font-semibold text-gray-900">Report an issue</h1>
+            <p className="text-xs text-gray-400">Always anonymous</p>
+          </div>
         </div>
       </div>
 
@@ -200,6 +243,12 @@ export default function ReportPage() {
           </p>
         </div>
 
+        {reportCount >= 3 && (
+          <div className="bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3 mb-4">
+            <p className="text-xs text-amber-700">⚠️ You have submitted {reportCount} reports. After {5 - reportCount} more you will need to contact your manager for additional reporting.</p>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="bg-white rounded-2xl border border-gray-100 p-4 space-y-4">
             <div>
@@ -210,7 +259,6 @@ export default function ReportPage() {
                 {categories.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Location <span className="font-normal text-gray-400">(street or block — not your address)</span>
@@ -219,15 +267,12 @@ export default function ReportPage() {
                 placeholder="e.g. 200 block of Oak Drive"
                 className="w-full px-3 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-green-500" required/>
             </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Describe the issue</label>
               <textarea value={description} onChange={e => setDescription(e.target.value)}
                 placeholder="Be specific and factual. No personal attacks or names."
-                rows={4}
-                className="w-full px-3 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-green-500 resize-none" required/>
+                rows={4} className="w-full px-3 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-green-500 resize-none" required/>
             </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Photos <span className="font-normal text-gray-400">(optional · up to 3 · before photos)</span>
@@ -245,15 +290,19 @@ export default function ReportPage() {
                 </div>
               )}
             </div>
-
             <div className="flex items-center justify-between py-2">
               <div>
                 <p className="text-sm font-medium text-gray-700">Request volunteer help?</p>
-                <p className="text-xs text-gray-400 mt-0.5">Uses 1 Life · max 9 per year</p>
+                {volunteerCount === 0 ? (
+                  <p className="text-xs text-amber-600 mt-0.5">No volunteers in pool yet — join the Volunteers tab to be first!</p>
+                ) : (
+                  <p className="text-xs text-gray-400 mt-0.5">Uses 1 Life · {volunteerCount} volunteer{volunteerCount !== 1 ? 's' : ''} available</p>
+                )}
               </div>
               <button type="button" onClick={() => setNeedVolunteer(!needVolunteer)}
-                className={`w-12 h-7 rounded-full transition-colors relative ${needVolunteer ? 'bg-green-500' : 'bg-gray-200'}`}>
-                <span className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform ${needVolunteer ? 'translate-x-5' : 'translate-x-0.5'}`}/>
+                disabled={volunteerCount === 0}
+                className={`w-12 h-7 rounded-full transition-colors relative ${needVolunteer && volunteerCount > 0 ? 'bg-green-500' : 'bg-gray-200'} ${volunteerCount === 0 ? 'opacity-40' : ''}`}>
+                <span className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform ${needVolunteer && volunteerCount > 0 ? 'translate-x-5' : 'translate-x-0.5'}`}/>
               </button>
             </div>
           </div>
