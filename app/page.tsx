@@ -73,18 +73,19 @@ export default function Home() {
         <div className="mb-6 flex justify-center">
           <img src="/icon-192.png" alt="NeighborhoodResolve" width="100" height="100" style={{borderRadius:'50%'}}/>
         </div>
-        <h1 className="text-3xl font-semibold text-gray-900 mb-3">NeighborhoodResolve</h1>
-        <p className="text-lg text-gray-500 mb-2">Every neighborhood is only as strong as its links.</p>
+        <p className="text-2xl font-semibold text-gray-700 mb-2 leading-snug">Every neighborhood is only as strong as its links.</p>
+        <h1 className="text-lg text-gray-400 mb-4">NeighborhoodResolve</h1>
         <p className="text-sm text-gray-400 leading-relaxed mb-3">
           A free platform that helps neighbors connect, communicate, and support one another — so small issues can be resolved before they become lasting conflicts.
         </p>
         <p className="text-sm font-bold text-green-600 mb-8">Free for residents. Always.</p>
-        <div className="flex flex-col items-center gap-3">
+        <div className="flex flex-col items-center gap-2">
           <p className="text-sm text-gray-400 italic">The missing link may be closer than you think.</p>
           <button onClick={() => setMode('login')}
             className="px-8 py-3 rounded-xl text-white text-sm font-medium" style={{background:'#1D9E75'}}>
             Enter NeighborhoodResolve
           </button>
+          <p className="text-xs text-gray-300 mt-1">See what your neighborhood can become.</p>
         </div>
       </div>
 
@@ -109,7 +110,7 @@ export default function Home() {
 
       <div className="px-6 pb-10 max-w-lg mx-auto">
         <div className="bg-green-50 rounded-2xl p-6 text-center">
-          <p className="text-sm font-medium text-green-800 mb-3">Built for residents without HOAs — and a powerful complement for HOA boards who want to be appreciated, not feared.</p>
+          <p className="text-sm font-medium text-green-800 mb-3">Built for residents without HOAs — and a powerful complement for HOA boards who want stronger resident engagement.</p>
           <p className="text-xs text-green-700 leading-relaxed mb-4">
             Whether your neighborhood has an HOA or not, NeighborhoodResolve helps everyone communicate better, resolve concerns faster, and build the kind of trust that makes a neighborhood feel like home.
           </p>
