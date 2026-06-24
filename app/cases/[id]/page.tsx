@@ -43,22 +43,14 @@ export default function CaseDetailPage() {
     setUpdating(true)
     const newCount = (caseData.strike_count || 0) + 1
     const newStatus = newCount >= 3 ? 'escalated' : 'strike'
-    await supabase.from('cases').update({
-      strike_count: newCount,
-      status: newStatus,
-      updated_at: new Date().toISOString()
-    }).eq('id', params.id)
+    await supabase.from('cases').update({ strike_count: newCount, status: newStatus, updated_at: new Date().toISOString() }).eq('id', params.id)
     await loadCase()
     setUpdating(false)
   }
 
   async function markResolved() {
     setUpdating(true)
-    await supabase.from('cases').update({
-      status: 'resolved',
-      resolved_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    }).eq('id', params.id)
+    await supabase.from('cases').update({ status: 'resolved', resolved_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', params.id)
     await loadCase()
     setUpdating(false)
   }
@@ -66,11 +58,7 @@ export default function CaseDetailPage() {
   async function submitTimeline() {
     if (!prTimeline.trim()) return
     setUpdating(true)
-    await supabase.from('cases').update({
-      pr_timeline: prTimeline,
-      status: 'pending',
-      updated_at: new Date().toISOString()
-    }).eq('id', params.id)
+    await supabase.from('cases').update({ pr_timeline: prTimeline, status: 'pending', updated_at: new Date().toISOString() }).eq('id', params.id)
     setShowTimelineForm(false)
     await loadCase()
     setUpdating(false)
@@ -78,10 +66,7 @@ export default function CaseDetailPage() {
 
   async function togglePRHelp() {
     setUpdating(true)
-    await supabase.from('cases').update({
-      pr_needs_help: !caseData.pr_needs_help,
-      updated_at: new Date().toISOString()
-    }).eq('id', params.id)
+    await supabase.from('cases').update({ pr_needs_help: !caseData.pr_needs_help, updated_at: new Date().toISOString() }).eq('id', params.id)
     await loadCase()
     setUpdating(false)
   }
@@ -91,8 +76,8 @@ export default function CaseDetailPage() {
     return map[status] || 1
   }
 
-  const isMessenger = profile?.access_level === 'B1' || profile?.access_level === 'B2' || profile?.access_level === 'B3' || profile?.access_level === 'A'
-  const isMGR = profile?.access_level === 'B1' || profile?.access_level === 'B2' || profile?.access_level === 'A'
+  const isMessenger = ['B1','B2','B3','A'].includes(profile?.access_level)
+  const isMGR = ['B1','B2','A'].includes(profile?.access_level)
   const isAdmin = profile?.access_level === 'A'
 
   const getExpiryDate = (resolvedAt: string) => {
@@ -111,12 +96,13 @@ export default function CaseDetailPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
+      {/* Header with improved back button */}
       <div className="bg-white border-b border-gray-100 px-4 pt-12 pb-4">
         <div className="max-w-lg mx-auto flex items-center gap-3">
-          <Link href="/cases" className="w-8 h-8 flex items-center justify-center rounded-xl bg-gray-100">
-            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/>
-            </svg>
+          <Link href="/cases"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium text-white"
+            style={{background:'#1D9E75'}}>
+            ← Back
           </Link>
           <div>
             <h1 className="text-base font-semibold text-gray-900">{caseData.category}</h1>
@@ -174,8 +160,6 @@ export default function CaseDetailPage() {
               🤝 Volunteer assistance requested
             </div>
           )}
-
-          {/* Photos */}
           {caseData.photo_urls && Array.isArray(caseData.photo_urls) && caseData.photo_urls.length > 0 && (
             <div className="mt-3">
               <p className="text-xs text-gray-400 mb-2">Before photos</p>
@@ -199,14 +183,13 @@ export default function CaseDetailPage() {
           </div>
         )}
 
-        {/* PR needs help */}
         {caseData.pr_needs_help && (
           <div className="bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3">
             <p className="text-xs font-medium text-amber-700">🙏 Resident has indicated they need help and welcome volunteer assistance</p>
           </div>
         )}
 
-        {/* PR response form */}
+        {/* PR timeline form */}
         {!isResolved && !showTimelineForm && (
           <button onClick={() => setShowTimelineForm(true)}
             className="w-full py-3 rounded-2xl text-xs font-medium border border-blue-200 bg-blue-50 text-blue-700">
@@ -234,15 +217,13 @@ export default function CaseDetailPage() {
           </div>
         )}
 
-        {/* Strike warning */}
         {caseData.strike_count >= 2 && !isResolved && (
           <div className="bg-red-50 border border-red-100 rounded-2xl px-4 py-3">
             <p className="text-xs text-red-700 font-medium">⚠️ {caseData.strike_count} strikes on record</p>
-            <p className="text-xs text-red-600 mt-1">One more unresolved strike triggers automatic escalation to the judge panel.</p>
+            <p className="text-xs text-red-600 mt-1">One more strike triggers automatic escalation to the judge panel.</p>
           </div>
         )}
 
-        {/* Judge panel notice */}
         {isEscalated && (
           <div className="bg-purple-50 border border-purple-100 rounded-2xl px-4 py-3">
             <p className="text-xs text-purple-700 font-medium">⚖️ Judge panel active</p>
@@ -250,42 +231,42 @@ export default function CaseDetailPage() {
           </div>
         )}
 
-        {/* Messenger actions — credential controlled */}
+        {/* Credential-controlled buttons */}
         {!isResolved && !isEscalated && isMessenger && (
           <div className="bg-white rounded-2xl border border-gray-100 p-4 space-y-3">
             <p className="text-xs font-medium text-gray-500">Messenger actions</p>
             <div className="grid grid-cols-2 gap-2">
               <button onClick={() => updateStatus('pending')} disabled={updating}
-                className="py-3 rounded-xl text-xs font-medium border border-amber-200 bg-amber-50 text-amber-700 active:scale-95 transition-transform">
+                className="py-3 rounded-xl text-xs font-medium border border-amber-200 bg-amber-50 text-amber-700">
                 Mark awaiting response
               </button>
               {isMGR && (
                 <button onClick={issueStrike} disabled={updating}
-                  className="py-3 rounded-xl text-xs font-medium border border-red-200 bg-red-50 text-red-700 active:scale-95 transition-transform">
+                  className="py-3 rounded-xl text-xs font-medium border border-red-200 bg-red-50 text-red-700">
                   Issue strike
                 </button>
               )}
-              {isAdmin && (
+              {(isAdmin || isMGR) && (
                 <button onClick={() => updateStatus('escalated')} disabled={updating}
-                  className="py-3 rounded-xl text-xs font-medium border border-purple-200 bg-purple-50 text-purple-700 active:scale-95 transition-transform">
+                  className="py-3 rounded-xl text-xs font-medium border border-purple-200 bg-purple-50 text-purple-700">
                   Escalate to judge
                 </button>
               )}
               <button onClick={markResolved} disabled={updating}
-                className="py-3 rounded-xl text-xs font-medium border border-green-200 bg-green-50 text-green-700 active:scale-95 transition-transform">
+                className="py-3 rounded-xl text-xs font-medium border border-green-200 bg-green-50 text-green-700">
                 ✓ Mark resolved
               </button>
             </div>
           </div>
         )}
 
-        {/* Resolved state */}
         {isResolved && (
           <div className="bg-green-50 rounded-2xl px-4 py-4 text-center space-y-3">
             <p className="text-green-700 font-medium text-sm">✓ Case resolved</p>
             {caseData.resolved_at && (
               <p className="text-xs text-green-600">
-                Auto-deleted on {getExpiryDate(caseData.resolved_at)} · {isMGR ? 'MGR/Admin can delete early' : 'Contact your manager to delete early'}
+                Auto-deleted on {getExpiryDate(caseData.resolved_at)}
+                {isMGR ? ' · You can delete this early from the admin panel' : ' · Contact your manager to delete early'}
               </p>
             )}
             <Link href="/cases"
