@@ -33,13 +33,13 @@ const navItems = [
 export default function BottomNav() {
   const pathname = usePathname()
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 safe-bottom z-50">
-      <div className="flex justify-around items-center h-16 max-w-lg mx-auto px-2">
+    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 z-50" style={{paddingBottom: 'env(safe-area-inset-bottom)'}}>
+      <div className="flex justify-around items-center h-14 max-w-lg mx-auto px-1">
         {navItems.map(item => {
           const active = pathname === item.href
           return (
             <Link key={item.href} href={item.href}
-              className={`flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-all ${active ? 'text-green-600' : 'text-gray-400'}`}>
+              className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-all ${active ? 'text-green-600' : 'text-gray-400'}`}>
               {item.icon}
               <span className="text-xs font-medium">{item.label}</span>
             </Link>

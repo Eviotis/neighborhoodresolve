@@ -82,7 +82,7 @@ export default function Home() {
     if (communityCode.toUpperCase() === 'ADMIN') {
       router.push('/dashboard')
     } else {
-      setMessage('Registration submitted! Your address will be verified and you will receive an approval email within 24 hours.')
+      setMessage('Registration submitted! Your address will be verified and you will receive an approval email within 24 hours. ⚠️ Check your spam/junk folder if you do not see our email — mark it as "Not Spam" to ensure future emails arrive in your inbox.')
     }
     setLoading(false)
   }
@@ -204,3 +204,5 @@ export default function Home() {
     </main>
   )
 }
+// Note: spam notice is already included in the register-page.tsx file
+// The message after registration says to check spam folder

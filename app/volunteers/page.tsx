@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import BottomNav from '@/components/BottomNav'
+import Link from 'next/link'
 
 export default function VolunteersPage() {
   const router = useRouter()
@@ -46,34 +47,36 @@ export default function VolunteersPage() {
     setSubmitting(false)
   }
 
-  const initials = (id: string) => id.slice(0, 2).toUpperCase()
   const avatarColors = ['bg-blue-100 text-blue-700', 'bg-purple-100 text-purple-700', 'bg-amber-100 text-amber-700', 'bg-green-100 text-green-700']
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
+    <div className="min-h-screen bg-gray-50 pb-20">
       <div className="bg-white border-b border-gray-100 px-4 pt-12 pb-4">
         <div className="max-w-lg mx-auto flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-semibold text-gray-900">Volunteer pool</h1>
-            <p className="text-xs text-gray-400 mt-0.5">Neighbors helping neighbors · first visit free</p>
+            <div className="flex items-center gap-2 mb-1">
+              <Link href="/dashboard" className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-white" style={{background:'#1D9E75'}}>
+                ← Home
+              </Link>
+              <h1 className="text-lg font-semibold text-gray-900">Volunteers</h1>
+            </div>
+            <p className="text-xs text-gray-400">Neighbors helping neighbors · first visit free</p>
           </div>
           <button onClick={() => setShowForm(!showForm)}
             className="text-xs font-medium text-white px-3 py-2 rounded-xl" style={{background:'#1D9E75'}}>
-            + Join pool
+            + Join
           </button>
         </div>
       </div>
 
       <div className="max-w-lg mx-auto px-4 py-4 space-y-4">
-        {/* First-free rule explanation */}
         <div className="bg-blue-50 border border-blue-100 rounded-2xl px-4 py-3">
           <p className="text-xs text-blue-800 font-medium mb-1">How volunteer requests work</p>
           <p className="text-xs text-blue-700 leading-relaxed">
-            Each household receives <strong>one free volunteer visit per issue per year</strong>. After that, a small contribution or skill trade is encouraged. Volunteers respond only to requests that match their skills — no pressure to accept every request.
+            Each household receives <strong>one free Life</strong> per year for volunteer help. No expectations, no obligations — volunteers help because giving back feels good. If help comes, celebrate it. If it doesn't, no resentment.
           </p>
         </div>
 
-        {/* Join form */}
         {showForm && (
           <form onSubmit={joinPool} className="bg-white rounded-2xl border border-gray-100 p-4 space-y-4">
             <p className="text-sm font-medium text-gray-700">Join the volunteer pool</p>
@@ -121,11 +124,10 @@ export default function VolunteersPage() {
 
         {success && (
           <div className="bg-green-50 rounded-2xl px-4 py-3 text-xs text-green-700">
-            ✓ You've been added to the volunteer pool! The Messenger will contact you when a matching request comes in.
+            ✓ You've been added to the volunteer pool!
           </div>
         )}
 
-        {/* Volunteer list */}
         <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-50">
             <h2 className="text-sm font-medium text-gray-700">{volunteers.length} volunteers in pool</h2>
@@ -135,7 +137,7 @@ export default function VolunteersPage() {
           ) : volunteers.length === 0 ? (
             <div className="px-4 py-8 text-center">
               <p className="text-sm text-gray-400">No volunteers yet</p>
-              <p className="text-xs text-gray-300 mt-1">Be the first to join the pool</p>
+              <p className="text-xs text-gray-300 mt-1">Be the first to join the pool above</p>
             </div>
           ) : volunteers.map((v, i) => (
             <div key={v.id} className="flex items-center gap-3 px-4 py-3 border-b border-gray-50 last:border-0">
@@ -147,8 +149,7 @@ export default function VolunteersPage() {
                 <p className="text-xs text-gray-400 truncate">{v.skills}</p>
                 <p className="text-xs text-gray-300">{v.compensation === 'free' ? 'Free help' : v.compensation === 'materials' ? 'Materials only' : 'Small fee'}</p>
               </div>
-              <span className={`text-xs px-2 py-1 rounded-lg font-medium ${
-                v.status === 'available' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}`}>
+              <span className={`text-xs px-2 py-1 rounded-lg font-medium ${v.status === 'available' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}`}>
                 {v.status === 'available' ? 'Available' : 'On assignment'}
               </span>
             </div>

@@ -27,10 +27,12 @@ export default function Dashboard() {
     ])
     const cases = casesRes.data || []
     const volunteers = volunteersRes.data || []
-    const open = cases.filter(c => c.status !== 'resolved').length
-    const resolved = cases.filter(c => c.status === 'resolved').length
-    const strikes = cases.filter(c => c.strike_count > 0).length
-    setStats({ open, resolved, strikes, volunteers: volunteers.length })
+    setStats({
+      open: cases.filter(c => c.status !== 'resolved').length,
+      resolved: cases.filter(c => c.status === 'resolved').length,
+      strikes: cases.filter(c => c.strike_count > 0).length,
+      volunteers: volunteers.length
+    })
     setRecentCases(cases.slice(0, 5))
     setLoading(false)
   }
@@ -49,20 +51,21 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
-      {/* Header */}
+    <div className="min-h-screen bg-gray-50 pb-20">
       <div className="bg-white border-b border-gray-100 px-4 pt-12 pb-4">
         <div className="flex justify-between items-center max-w-lg mx-auto">
           <div>
             <h1 className="text-lg font-semibold text-gray-900">NeighborhoodResolve</h1>
             <p className="text-xs text-gray-400">{user?.email}</p>
           </div>
-          <button onClick={signOut} className="text-xs text-gray-400 px-3 py-1.5 rounded-lg border border-gray-200">Sign out</button>
+          <div className="flex gap-2">
+            <Link href="/admin" className="text-xs text-gray-400 px-3 py-1.5 rounded-lg border border-gray-200">Admin</Link>
+            <button onClick={signOut} className="text-xs text-gray-400 px-3 py-1.5 rounded-lg border border-gray-200">Sign out</button>
+          </div>
         </div>
       </div>
 
       <div className="max-w-lg mx-auto px-4 py-4 space-y-4">
-        {/* Stats */}
         <div className="grid grid-cols-2 gap-3">
           {[
             { label: 'Open cases', value: stats.open, color: 'text-amber-600' },
@@ -77,7 +80,6 @@ export default function Dashboard() {
           ))}
         </div>
 
-        {/* Quick action */}
         <Link href="/report"
           className="flex items-center gap-3 bg-green-600 text-white px-4 py-4 rounded-2xl active:scale-95 transition-transform">
           <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center">
@@ -87,14 +89,13 @@ export default function Dashboard() {
           </div>
           <div>
             <p className="font-medium text-sm">Report an issue</p>
-            <p className="text-xs text-green-100">Always anonymous · 1 per month</p>
+            <p className="text-xs text-green-100">Always anonymous</p>
           </div>
           <svg className="ml-auto" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/>
           </svg>
         </Link>
 
-        {/* Recent cases */}
         <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-50">
             <h2 className="text-sm font-medium text-gray-700">Recent cases</h2>
@@ -104,9 +105,8 @@ export default function Dashboard() {
           ) : recentCases.length === 0 ? (
             <div className="px-4 py-8 text-center">
               <p className="text-sm text-gray-400">No cases yet</p>
-              <p className="text-xs text-gray-300 mt-1">Be the first to report an issue</p>
             </div>
-          ) : recentCases.map((c, i) => (
+          ) : recentCases.map((c) => (
             <Link key={c.id} href={`/cases/${c.id}`}
               className="flex items-center gap-3 px-4 py-3 border-b border-gray-50 last:border-0 active:bg-gray-50">
               <div className="flex-1 min-w-0">
@@ -120,7 +120,6 @@ export default function Dashboard() {
           ))}
         </div>
 
-        {/* Privacy reminder */}
         <div className="bg-green-50 rounded-2xl px-4 py-3">
           <p className="text-xs text-green-700 leading-relaxed">
             🔒 All reports are anonymous. No resident identity is ever stored or shared. Cases are deleted after resolution.

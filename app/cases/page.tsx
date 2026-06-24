@@ -6,11 +6,11 @@ import BottomNav from '@/components/BottomNav'
 import Link from 'next/link'
 
 const statusConfig: Record<string, {label: string, color: string}> = {
-  open:      { label: 'Open',             color: 'bg-blue-50 text-blue-700' },
-  pending:   { label: 'Awaiting response',color: 'bg-amber-50 text-amber-700' },
-  strike:    { label: 'Strike issued',    color: 'bg-red-50 text-red-700' },
-  resolved:  { label: 'Resolved',         color: 'bg-green-50 text-green-700' },
-  escalated: { label: 'Judge panel',      color: 'bg-purple-50 text-purple-700' },
+  open:      { label: 'Open',              color: 'bg-blue-50 text-blue-700' },
+  pending:   { label: 'Awaiting response', color: 'bg-amber-50 text-amber-700' },
+  strike:    { label: 'Strike issued',     color: 'bg-red-50 text-red-700' },
+  resolved:  { label: 'Resolved',          color: 'bg-green-50 text-green-700' },
+  escalated: { label: 'Judge panel',       color: 'bg-purple-50 text-purple-700' },
 }
 
 const filters = ['All', 'Open', 'Pending', 'Strike', 'Resolved', 'Escalated']
@@ -38,21 +38,24 @@ export default function CasesPage() {
   const daysSince = (date: string) => Math.floor((Date.now() - new Date(date).getTime()) / 86400000) + 1
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
+    <div className="min-h-screen bg-gray-50 pb-20">
       <div className="bg-white border-b border-gray-100 px-4 pt-12 pb-4">
         <div className="max-w-lg mx-auto">
-          <h1 className="text-lg font-semibold text-gray-900">Active cases</h1>
-          <p className="text-xs text-gray-400 mt-0.5">Identities protected throughout</p>
+          <div className="flex items-center gap-2 mb-1">
+            <Link href="/dashboard" className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-white" style={{background:'#1D9E75'}}>
+              ← Home
+            </Link>
+            <h1 className="text-lg font-semibold text-gray-900">Active cases</h1>
+          </div>
+          <p className="text-xs text-gray-400">Identities protected throughout</p>
         </div>
       </div>
 
-      {/* Filter pills */}
       <div className="bg-white border-b border-gray-100 px-4 py-2 overflow-x-auto">
         <div className="flex gap-2 max-w-lg mx-auto w-max">
           {filters.map(f => (
             <button key={f} onClick={() => setFilter(f)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
-                filter === f ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-500'}`}>
+              className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${filter === f ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-500'}`}>
               {f}
             </button>
           ))}
@@ -72,9 +75,7 @@ export default function CasesPage() {
               <Link key={c.id} href={`/cases/${c.id}`}
                 className="flex items-center gap-3 bg-white rounded-2xl px-4 py-3 border border-gray-100 active:bg-gray-50">
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <p className="text-sm font-medium text-gray-800 truncate">{c.category}</p>
-                  </div>
+                  <p className="text-sm font-medium text-gray-800 truncate">{c.category}</p>
                   <p className="text-xs text-gray-400 truncate">{c.location}</p>
                   <p className="text-xs text-gray-300 mt-0.5">Day {daysSince(c.created_at)} · {c.strike_count || 0} strike{c.strike_count !== 1 ? 's' : ''}</p>
                 </div>
@@ -82,9 +83,6 @@ export default function CasesPage() {
                   <span className={`text-xs px-2 py-1 rounded-lg font-medium ${statusConfig[c.status]?.color || 'bg-gray-50 text-gray-500'}`}>
                     {statusConfig[c.status]?.label || c.status}
                   </span>
-                  <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="#d1d5db" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/>
-                  </svg>
                 </div>
               </Link>
             ))}
