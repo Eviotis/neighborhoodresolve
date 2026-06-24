@@ -2,7 +2,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import Link from 'next/link'
 
 export default function Home() {
   const router = useRouter()
@@ -63,16 +62,14 @@ export default function Home() {
     if (communityCode.toUpperCase() === 'ADMIN') {
       router.push('/dashboard')
     } else {
-      setMessage('Registration submitted! Your address will be verified and you will receive approval within 24 hours. ⚠️ Check your spam/junk folder for our email — mark it as "Not Spam" to ensure future emails arrive in your inbox.')
+      setMessage('Registration submitted! Your address will be verified and you will receive approval within 24 hours. Check your spam/junk folder for our email and mark it as "Not Spam".')
     }
     setLoading(false)
   }
 
-  // Landing page
   if (mode === 'landing') return (
     <main className="min-h-screen bg-white">
-      {/* Hero */}
-      <div className="px-6 pt-16 pb-12 text-center max-w-lg mx-auto">
+      <div className="px-6 pt-16 pb-10 text-center max-w-lg mx-auto">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-6" style={{background:'#1D9E75'}}>
           <svg width="32" height="32" fill="none" viewBox="0 0 24 24">
             <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -81,7 +78,7 @@ export default function Home() {
         </div>
         <h1 className="text-3xl font-semibold text-gray-900 mb-3">NeighborhoodResolve</h1>
         <p className="text-lg text-gray-500 mb-2">Friendly. Anonymous. Fair.</p>
-        <p className="text-sm text-gray-400 leading-relaxed mb-4">
+        <p className="text-sm text-gray-400 leading-relaxed mb-3">
           The smarter way for neighborhoods to resolve issues, organize volunteers, and build stronger communities — without politics and kings. Residents in power of their own destiny through a bulletproof democratic system.
         </p>
         <p className="text-sm font-medium text-green-600 mb-8">Give it a shot — it's free for 90 days. No credit card required.</p>
@@ -97,16 +94,12 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Features */}
-      <div className="px-6 pb-12 max-w-lg mx-auto">
-        <div className="space-y-4">
+      <div className="px-6 pb-10 max-w-lg mx-auto">
+        <div className="space-y-3">
           {[
-            { icon: '🔒', title: 'Completely anonymous', desc: 'Report issues without fear. Your identity is never revealed to other residents.' },
-            { icon: '❤️', title: 'Lives & volunteering', desc: 'Neighbors help neighbors. Gift a Life, earn stars, and build real community bonds.' },
-            { icon: '⚖️', title: 'Fair resolution', desc: 'From friendly Messenger workflow to a democratic judge panel — no lawyers, no drama.' },
-            { icon: '🎉', title: 'Community events', desc: 'Organize gatherings, yard sales, and BBQs. See who\'s coming and what they\'re bringing.' },
-            { icon: '🔧', title: 'Trusted services', desc: 'Find and rate vetted contractors who serve your neighborhood.' },
-            { icon: '🏆', title: 'No kings, no politics', desc: 'Roles are filled by random drawing. Everyone has an equal voice.' },
+            { icon: '🔒', title: 'Completely anonymous', desc: 'Report issues without fear. Your identity is never revealed to anyone.' },
+            { icon: '🤝', title: 'Gift of volunteer access', desc: 'Neighbors help neighbors — free, no obligations, no pressure. Just community spirit.' },
+            { icon: '⚖️', title: 'Fair & democratic resolution', desc: 'Friendly Messenger workflow to a judge panel. No lawyers, no drama, no kings.' },
           ].map(f => (
             <div key={f.title} className="flex gap-4 bg-gray-50 rounded-2xl p-4">
               <span className="text-2xl flex-shrink-0">{f.icon}</span>
@@ -116,11 +109,11 @@ export default function Home() {
               </div>
             </div>
           ))}
+          <p className="text-xs text-gray-400 text-center pt-1">Also includes: community events, trusted services directory, contractor ratings and more.</p>
         </div>
       </div>
 
-      {/* HOA section */}
-      <div className="px-6 pb-12 max-w-lg mx-auto">
+      <div className="px-6 pb-10 max-w-lg mx-auto">
         <div className="bg-green-50 rounded-2xl p-6 text-center">
           <p className="text-sm font-medium text-green-800 mb-2">Already have an HOA?</p>
           <p className="text-xs text-green-700 leading-relaxed mb-4">
@@ -133,14 +126,12 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Footer */}
       <div className="px-6 pb-8 text-center">
         <p className="text-xs text-gray-300">© 2026 NeighborhoodResolve · Friendly. Anonymous. Fair.</p>
       </div>
     </main>
   )
 
-  // Auth forms
   return (
     <main className="min-h-screen flex flex-col items-center justify-center p-4 bg-white">
       <div className="w-full max-w-sm">
