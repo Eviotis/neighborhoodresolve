@@ -57,8 +57,13 @@ export default function ProfilePage() {
     <div className="min-h-screen bg-gray-50 pb-20">
       <div className="bg-white border-b border-gray-100 px-4 pt-12 pb-4">
         <div className="max-w-lg mx-auto">
-          <h1 className="text-lg font-semibold text-gray-900">My profile</h1>
-          <p className="text-xs text-gray-400 mt-0.5">{displayName}</p>
+          <div className="flex items-center gap-2 mb-1">
+            <Link href="/dashboard" className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-white" style={{background:'#1D9E75'}}>
+              ← Home
+            </Link>
+            <h1 className="text-lg font-semibold text-gray-900">My profile</h1>
+          </div>
+          <p className="text-xs text-gray-400">{displayName}</p>
         </div>
       </div>
 
