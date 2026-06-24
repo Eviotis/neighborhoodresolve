@@ -15,6 +15,18 @@ const categories = [
   'Other',
 ]
 
+async function sendNotification(to: string[], subject: string, html: string) {
+  try {
+    await fetch('/api/notify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ to, subject, html }),
+    })
+  } catch (e) {
+    console.log('Email notification failed:', e)
+  }
+}
+
 export default function ReportPage() {
   const router = useRouter()
   const [category, setCategory] = useState('')
@@ -57,9 +69,8 @@ export default function ReportPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push('/'); return }
 
-    // Check report count for abuse
     const { data: profile } = await supabase.from('profiles').select('report_count, report_weight').eq('id', user.id).single()
-    
+
     if (profile && profile.report_count >= 10) {
       setError('Please contact your neighborhood manager to submit additional reports.')
       setLoading(false)
@@ -69,7 +80,6 @@ export default function ReportPage() {
     const reportCount = (profile?.report_count || 0) + 1
     const weight = reportCount > 5 ? 2.0 : reportCount > 3 ? 3.0 : 5.0
 
-    // Insert case first to get ID
     const { data: newCase, error: insertError } = await supabase.from('cases').insert({
       category,
       location,
@@ -88,7 +98,6 @@ export default function ReportPage() {
       return
     }
 
-    // Upload photos and update case
     if (photos.length > 0) {
       const photoUrls = await uploadPhotos(newCase.id)
       if (photoUrls.length > 0) {
@@ -96,13 +105,59 @@ export default function ReportPage() {
       }
     }
 
-    // Update profile report count
     if (profile) {
       await supabase.from('profiles').update({
         report_count: reportCount,
         report_weight: weight,
         updated_at: new Date().toISOString()
       }).eq('id', user.id)
+    }
+
+    // Get Messenger and ADMIN emails to notify
+    const { data: managers } = await supabase
+      .from('profiles')
+      .select('email')
+      .in('access_level', ['A', 'B1', 'B2'])
+
+    if (managers && managers.length > 0) {
+      const emails = managers.map(m => m.email).filter(Boolean)
+      const caseUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://project-76shj.vercel.app'}/cases/${newCase.id}`
+      
+      await sendNotification(
+        emails,
+        `New case filed: ${category}`,
+        `
+          <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto;">
+            <div style="background: #1D9E75; padding: 20px; border-radius: 12px 12px 0 0;">
+              <h1 style="color: white; margin: 0; font-size: 18px;">New case filed</h1>
+            </div>
+            <div style="background: #f9f9f9; padding: 20px; border-radius: 0 0 12px 12px; border: 1px solid #eee;">
+              <p style="margin: 0 0 12px; color: #374151;"><strong>Category:</strong> ${category}</p>
+              <p style="margin: 0 0 12px; color: #374151;"><strong>Location:</strong> ${location}</p>
+              <p style="margin: 0 0 12px; color: #374151;"><strong>Description:</strong> ${description}</p>
+              <p style="margin: 0 0 20px; color: #374151;"><strong>Volunteer help requested:</strong> ${needVolunteer ? 'Yes' : 'No'}</p>
+              <a href="${caseUrl}" style="background: #1D9E75; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; display: inline-block;">
+                View case →
+              </a>
+              <p style="margin: 20px 0 0; font-size: 12px; color: #9CA3AF;">
+                Reporter identity is protected. This notification was sent to all Messengers and Admins.
+              </p>
+            </div>
+          </div>
+        `
+      )
+    }
+
+    // Alert if approaching abuse threshold
+    if (reportCount >= 5) {
+      const { data: admins } = await supabase.from('profiles').select('email').eq('access_level', 'A')
+      if (admins && admins.length > 0) {
+        await sendNotification(
+          admins.map(a => a.email).filter(Boolean),
+          `⚠️ Possible abuse alert — high report count`,
+          `<p>A resident has submitted ${reportCount} reports. Please review for possible abuse.</p>`
+        )
+      }
     }
 
     setSubmitted(true)
@@ -133,7 +188,7 @@ export default function ReportPage() {
       <div className="bg-white border-b border-gray-100 px-4 pt-12 pb-4">
         <div className="max-w-lg mx-auto">
           <h1 className="text-lg font-semibold text-gray-900">Report an issue</h1>
-          <p className="text-xs text-gray-400 mt-0.5">Completely anonymous</p>
+          <p className="text-xs text-gray-400 mt-0.5">Always anonymous</p>
         </div>
       </div>
 
@@ -173,7 +228,6 @@ export default function ReportPage() {
                 className="w-full px-3 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-green-500 resize-none" required/>
             </div>
 
-            {/* Photo upload */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Photos <span className="font-normal text-gray-400">(optional · up to 3 · before photos)</span>
@@ -192,7 +246,6 @@ export default function ReportPage() {
               )}
             </div>
 
-            {/* Volunteer toggle */}
             <div className="flex items-center justify-between py-2">
               <div>
                 <p className="text-sm font-medium text-gray-700">Request volunteer help?</p>
