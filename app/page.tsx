@@ -85,7 +85,7 @@ export default function Home() {
             className="px-8 py-3 rounded-xl text-white text-sm font-medium" style={{background:'#1D9E75'}}>
             Enter NeighborhoodResolve
           </button>
-          <p className="text-xs text-gray-300 mt-1">See what your neighborhood can become.</p>
+          <p className="text-sm font-medium text-gray-500 mt-1">See what your neighborhood can become.</p>
         </div>
       </div>
 
@@ -119,6 +119,10 @@ export default function Home() {
             Tell Us About Your Community →
           </a>
           <p className="text-xs text-green-600 mt-3 opacity-70">For additional questions on how we can complement your mission, feel free to contact us.</p>
+          <div className="mt-4 pt-4 border-t border-green-100">
+            <p className="text-sm font-bold text-green-800 tracking-wide uppercase">Free for residents. Always.</p>
+            <p className="text-xs text-green-600 opacity-60 mt-1 leading-relaxed">Communities and associations receive a complimentary 90-day trial before administrative plans begin.</p>
+          </div>
         </div>
       </div>
 
