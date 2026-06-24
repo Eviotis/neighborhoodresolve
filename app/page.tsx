@@ -74,19 +74,16 @@ export default function Home() {
           <img src="/icon-192.png" alt="NeighborhoodResolve" width="100" height="100" style={{borderRadius:'50%'}}/>
         </div>
         <h1 className="text-3xl font-semibold text-gray-900 mb-3">NeighborhoodResolve</h1>
-        <p className="text-lg text-gray-500 mb-2">Friendly. Anonymous. Fair.</p>
+        <p className="text-lg text-gray-500 mb-2">Every neighborhood is only as strong as its links.</p>
         <p className="text-sm text-gray-400 leading-relaxed mb-3">
-          The smarter way for neighborhoods to resolve issues, organize volunteers, and build stronger communities — without politics and kings. Residents in power of their own destiny through a bulletproof democratic system.
+          A free platform that helps neighbors connect, communicate, and support one another — so small issues can be resolved before they become lasting conflicts.
         </p>
-        <p className="text-sm font-medium text-green-600 mb-8">Give it a shot — it's free for 90 days. No credit card required.</p>
-        <div className="flex gap-3 justify-center">
+        <p className="text-sm font-bold text-green-600 mb-8">Free for residents. Always.</p>
+        <div className="flex flex-col items-center gap-3">
+          <p className="text-sm text-gray-400 italic">The missing link may be closer than you think.</p>
           <button onClick={() => setMode('login')}
-            className="px-6 py-3 rounded-xl text-white text-sm font-medium" style={{background:'#1D9E75'}}>
-            Sign in
-          </button>
-          <button onClick={() => setMode('register')}
-            className="px-6 py-3 rounded-xl text-sm font-medium border border-gray-200 text-gray-700">
-            Join your community
+            className="px-8 py-3 rounded-xl text-white text-sm font-medium" style={{background:'#1D9E75'}}>
+            Enter NeighborhoodResolve
           </button>
         </div>
       </div>
@@ -94,9 +91,9 @@ export default function Home() {
       <div className="px-6 pb-10 max-w-lg mx-auto">
         <div className="space-y-3">
           {[
-            { icon: '🔒', title: 'Completely anonymous', desc: 'Report issues without fear. Your identity is never revealed to anyone.' },
-            { icon: '🤝', title: 'Gift of volunteer access', desc: 'Neighbors help neighbors — free, no obligations, no pressure. Just community spirit.' },
-            { icon: '⚖️', title: 'Fair & democratic resolution', desc: 'Friendly Messenger workflow to a judge panel. No lawyers, no drama, no kings.' },
+            { icon: '🤝', title: 'Neighbors Helping Neighbors', desc: 'Volunteer access connects people who need help with people who want to give it.' },
+            { icon: '🔒', title: 'Safe Communication', desc: 'Raise a concern without starting a war. Your identity stays protected when protection matters.' },
+            { icon: '⚖️', title: 'Community-Driven Resolution', desc: 'When issues arise, the community speaks before conflict escalates.' },
           ].map(f => (
             <div key={f.title} className="flex gap-4 bg-gray-50 rounded-2xl p-4">
               <span className="text-2xl flex-shrink-0">{f.icon}</span>
@@ -106,18 +103,15 @@ export default function Home() {
               </div>
             </div>
           ))}
-          <p className="text-xs text-gray-400 text-center pt-1">Also includes: community events, trusted services directory, contractor ratings and more.</p>
+          <p className="text-xs text-gray-400 text-center pt-1">Also includes: community events, trusted services, contractor ratings, yard sales, and more.</p>
         </div>
       </div>
 
       <div className="px-6 pb-10 max-w-lg mx-auto">
         <div className="bg-green-50 rounded-2xl p-6 text-center">
-          <p className="text-sm font-medium text-green-800 mb-3">Built for residents. Works with HOAs too.</p>
+          <p className="text-sm font-medium text-green-800 mb-3">Built for residents without HOAs — and a powerful complement for HOA boards who want to be appreciated, not feared.</p>
           <p className="text-xs text-green-700 leading-relaxed mb-4">
-            Our app is designed so residents never need an HOA — caring neighbors who democratically solve issues keep their community in top shape, removing friction and bad feelings. Residents have the power, anonymity prevents conflict, and good will gets issues resolved fast.
-          </p>
-          <p className="text-xs text-green-700 leading-relaxed mb-4">
-            If you live in an HOA, join and see how efficient our platform is — especially once your community reaches 5 or more members. If you manage an HOA and want to explore how it can work alongside our app, send us a message.
+            Whether your neighborhood has an HOA or not, NeighborhoodResolve helps everyone communicate better, resolve concerns faster, and build the kind of trust that makes a neighborhood feel like home.
           </p>
           <a href="mailto:johnanagnostou@gmail.com?subject=HOA Partnership Inquiry - NeighborhoodResolve&body=Hello,%0A%0AI manage an HOA and would like to learn how NeighborhoodResolve can work alongside our community.%0A%0AHOA Name:%0ANumber of homes:%0ALocation:%0A%0AThank you."
             className="inline-block px-5 py-2.5 rounded-xl text-xs font-medium text-white" style={{background:'#1D9E75'}}>
@@ -127,7 +121,9 @@ export default function Home() {
       </div>
 
       <div className="px-6 pb-8 text-center">
-        <p className="text-xs text-gray-300">© 2026 NeighborhoodResolve · Friendly. Anonymous. Fair.</p>
+        <p className="text-xs text-gray-400">© 2026 NeighborhoodResolve</p>
+        <p className="text-xs text-gray-300 mt-1">Homes need more than rules. They need relationships.</p>
+        <p className="text-xs text-gray-300">Neighborhoods need more than houses. They need links.</p>
       </div>
     </main>
   )
