@@ -6,17 +6,15 @@ import BottomNav from '@/components/BottomNav'
 import Link from 'next/link'
 
 const categories = [
-  { icon: '🌿', name: 'Landscaping & lawn' },
+  { icon: '🌿', name: 'Landscaping' },
   { icon: '🔧', name: 'Plumbing' },
   { icon: '⚡', name: 'Electrical' },
-  { icon: '🎨', name: 'Painting' },
-  { icon: '🐛', name: 'Pest control' },
-  { icon: '🏠', name: 'General handyman' },
   { icon: '❄️', name: 'HVAC' },
-  { icon: '🏗️', name: 'Construction & renovation' },
+  { icon: '🎨', name: 'Painting' },
+  { icon: '🪚', name: 'Carpentry' },
+  { icon: '🔨', name: 'Master of Many Trades' },
   { icon: '🧹', name: 'Cleaning' },
-  { icon: '📦', name: 'Moving & hauling' },
-  { icon: '🌳', name: 'Tree service' },
+  { icon: '💦', name: 'Pressure washing' },
   { icon: '🔌', name: 'Other' },
 ]
 
@@ -242,7 +240,7 @@ export default function ServicesPage() {
                 <div className="flex gap-2">
                   <button type="button" onClick={() => setShowRecommendForm(false)} className="flex-1 py-3 rounded-xl text-xs border border-gray-200 text-gray-500">Cancel</button>
                   <button type="submit" disabled={submitting} className="flex-1 py-3 rounded-xl text-xs font-medium text-white" style={{background:'#1D9E75'}}>
-                    {submitting ? 'Sending...' : 'Submit for review'}
+                    {submitting ? 'Sending...' : 'Submit recommendation'}
                   </button>
                 </div>
               </form>
