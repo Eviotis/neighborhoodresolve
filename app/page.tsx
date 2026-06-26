@@ -87,7 +87,8 @@ export default function Home() {
       email, password,
       options: { data: { community_name: communitySearch } }
     })
-    if (authError) { setError(authError.message); setLoading(false); return }
+    if (authError && authError.message) { setError(authError.message); setLoading(false); return }
+    if (!data.user) { setError('Registration failed. Please try again.'); setLoading(false); return }
 
     if (data.user) {
       // Create or find community
@@ -377,7 +378,7 @@ export default function Home() {
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-green-500"/>
               </div>
 
-              {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
+              {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{typeof error === 'string' ? error : JSON.stringify(error)}</p>}
               {message && <p className="text-sm text-green-700 bg-green-50 px-3 py-2 rounded-lg">{message}</p>}
 
               <button type="submit" disabled={loading}
