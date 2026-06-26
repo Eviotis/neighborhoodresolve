@@ -60,7 +60,7 @@ export default function Home() {
       })
     }
     if (communityCode.toUpperCase() === 'ADMIN') {
-      router.push('/dashboard')
+      router.push('/onboarding')
     } else {
       setMessage('Registration submitted! Your address will be verified and you will receive approval within 24 hours. Check your spam/junk folder for our email and mark it as "Not Spam".')
     }
@@ -152,7 +152,8 @@ export default function Home() {
             </svg>
           </div>
           <h1 className="text-2xl font-semibold text-gray-900">NeighborhoodResolve</h1>
-          <p className="text-sm text-gray-500 mt-1">Friendly. Anonymous. Fair.</p>
+          <p className="text-sm font-medium text-gray-700 mt-1">Connecting neighbors. Resolving concerns. Building stronger communities.</p>
+          <p className="text-xs text-gray-400 italic mt-0.5">"Every neighborhood is only as strong as its links."</p>
         </div>
 
         {mode === 'login' ? (
