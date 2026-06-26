@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 
 export default function Home() {
   const router = useRouter()
-  const [mode, setMode] = useState<'landing'|'login'|'register'>('landing')
+  const [mode, setMode] = useState<'landing'|'login'|'register'|'forgot'>('landing')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -144,6 +144,18 @@ export default function Home() {
     setLoading(false)
   }
 
+  async function handleForgotPassword(e: React.FormEvent) {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: 'https://www.neighborhoodresolve.com/reset-password'
+    })
+    if (resetError) { setError(resetError.message); setLoading(false); return }
+    setMessage('Password reset email sent. Check your inbox and spam folder.')
+    setLoading(false)
+  }
+
   if (mode === 'landing') return (
     <main className="min-h-screen bg-white">
       <div className="px-6 pt-16 pb-10 text-center max-w-lg mx-auto">
@@ -235,7 +247,29 @@ export default function Home() {
           <p className="text-xs text-gray-400 italic mt-0.5">"Every neighborhood is only as strong as its links."</p>
         </div>
 
-        {mode === 'login' ? (
+        {mode === 'forgot' ? (
+          <>
+            <form onSubmit={handleForgotPassword} className="space-y-4">
+              <p className="text-sm text-gray-500 text-center">Enter your email and we'll send you a reset link.</p>
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">Email address</label>
+                <input type="email" value={email} onChange={e => setEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-green-500" required/>
+              </div>
+              {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
+              {message && <p className="text-sm text-green-700 bg-green-50 px-3 py-2 rounded-lg">{message}</p>}
+              <button type="submit" disabled={loading}
+                className="w-full py-3 rounded-xl text-white text-sm font-medium"
+                style={{background: loading ? '#9FE1CB' : '#1D9E75'}}>
+                {loading ? 'Sending...' : 'Send reset link'}
+              </button>
+            </form>
+            <p className="text-center text-xs text-gray-400 mt-4">
+              <button onClick={() => setMode('login')} className="text-green-600 font-medium">← Back to sign in</button>
+            </p>
+          </>
+        ) : mode === 'login' ? (
           <>
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
@@ -255,14 +289,17 @@ export default function Home() {
                   </button>
                 </div>
               </div>
-              {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
+              {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{typeof error === 'string' ? error : JSON.stringify(error)}</p>}
               <button type="submit" disabled={loading}
                 className="w-full py-3 rounded-xl text-white text-sm font-medium"
                 style={{background: loading ? '#9FE1CB' : '#1D9E75'}}>
                 {loading ? 'Signing in...' : 'Sign in'}
               </button>
             </form>
-            <p className="text-center text-xs text-gray-400 mt-4">
+            <p className="text-center text-xs text-gray-400 mt-3">
+              <button onClick={() => setMode('forgot')} className="text-green-600 font-medium">Forgot your password?</button>
+            </p>
+            <p className="text-center text-xs text-gray-400 mt-2">
               Don't have an account? <button onClick={() => setMode('register')} className="text-green-600 font-medium">Join your community</button>
             </p>
           </>
