@@ -63,11 +63,17 @@ export default function Home() {
     const { data: profile } = await supabase.from('profiles').select('status').eq('id', data.user.id).single()
     if (profile && profile.status === 'pending') {
       await supabase.auth.signOut()
-      setError('Your registration is pending approval. You will receive an email within 24 hours. Check your spam folder.')
+      setError('Your registration is pending approval. You will receive an email within 24 hours — please also check your spam folder if you don\'t see it.')
       setLoading(false)
       return
     }
-    router.push('/dashboard')
+    // Check if onboarding completed
+    const { data: prefs } = await supabase.from('member_preferences').select('id').eq('profile_id', data.user.id).single()
+    if (!prefs) {
+      router.push('/onboarding')
+    } else {
+      router.push('/dashboard')
+    }
     setLoading(false)
   }
 
