@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import BottomNav from '@/components/BottomNav'
@@ -9,6 +9,7 @@ export default function ProfilePage() {
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
   const [profile, setProfile] = useState<any>(null)
+  const [community, setCommunity] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -17,6 +18,12 @@ export default function ProfilePage() {
   const [helpRequest, setHelpRequest] = useState({ description: '', category: 'general', urgency: 'normal' })
   const [helpSubmitting, setHelpSubmitting] = useState(false)
   const [helpSent, setHelpSent] = useState(false)
+  const [editCommunity, setEditCommunity] = useState(false)
+  const [communitySearch, setCommunitySearch] = useState('')
+  const [communityMatches, setCommunityMatches] = useState<any[]>([])
+  const [selectedCommunity, setSelectedCommunity] = useState<any>(null)
+  const [showDropdown, setShowDropdown] = useState(false)
+  const searchRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
@@ -34,10 +41,59 @@ export default function ProfilePage() {
         const { data: newP } = await supabase.from('profiles').select('*').eq('id', data.user.id).single()
         p = newP
       }
-      if (p) { setProfile(p); setIsAnon(p.is_anonymous || false) }
+      if (p) {
+        setProfile(p)
+        setIsAnon(p.is_anonymous || false)
+        if (p.community_id) {
+          const { data: com } = await supabase.from('communities').select('*').eq('id', p.community_id).single()
+          if (com) setCommunity(com)
+        }
+      }
       setLoading(false)
     })
+    const handler = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) setShowDropdown(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
   }, [])
+
+  async function searchCommunities(val: string) {
+    setCommunitySearch(val)
+    setSelectedCommunity(null)
+    if (val.length < 2) { setCommunityMatches([]); setShowDropdown(false); return }
+    const { data } = await supabase.from('communities').select('*').ilike('name', `%${val}%`).limit(6)
+    setCommunityMatches(data || [])
+    setShowDropdown(true)
+  }
+
+  function selectCommunity(c: any) {
+    setSelectedCommunity(c)
+    setCommunitySearch(c.name)
+    setShowDropdown(false)
+  }
+
+  async function saveCommunity() {
+    if (!user || !communitySearch.trim()) return
+    setSaving(true)
+    let communityId = selectedCommunity?.id || null
+    if (!communityId) {
+      const slug = communitySearch.toUpperCase().replace(/\s+/g, '_')
+      const { data: existing } = await supabase.from('communities').select('id').eq('slug', slug).single()
+      if (existing) {
+        communityId = existing.id
+      } else {
+        const { data: newCom } = await supabase.from('communities')
+          .insert({ name: communitySearch, slug, created_by: user.id, member_count: 1 })
+          .select().single()
+        communityId = newCom?.id || null
+      }
+    }
+    await supabase.from('profiles').update({ community_id: communityId, community_code: communitySearch.toUpperCase().replace(/\s+/g, '_') }).eq('id', user.id)
+    if (selectedCommunity) setCommunity(selectedCommunity)
+    setEditCommunity(false)
+    setSaving(false)
+  }
 
   async function saveProfile() {
     setSaving(true)
@@ -60,7 +116,6 @@ export default function ProfilePage() {
       status: 'pending_review',
       use_life: true,
     })
-    // Notify all managers
     const { data: managers } = await supabase.from('profiles').select('email').in('access_level', ['A','B1','B2','B3'])
     if (managers && managers.length > 0) {
       await fetch('/api/notify', {
@@ -85,6 +140,11 @@ export default function ProfilePage() {
     setHelpSubmitting(false)
   }
 
+  function goBack() {
+    if (window.history.length > 1) router.back()
+    else router.push('/dashboard')
+  }
+
   if (loading) return <div className="min-h-screen flex items-center justify-center text-sm text-gray-400">Loading...</div>
 
   const neighborNum = profile?.neighbor_number || 45
@@ -100,21 +160,18 @@ export default function ProfilePage() {
       <div className="bg-white border-b border-gray-100 px-4 pt-12 pb-4">
         <div className="max-w-lg mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Link href="/dashboard" className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-white" style={{background:'#1D9E75'}}>
-              ← Home
-            </Link>
-            <h1 className="text-lg font-semibold text-gray-900">My profile</h1>
+            <button onClick={goBack} className="text-xs text-gray-400 px-3 py-1.5 rounded-lg border border-gray-200">← Back</button>
+            <h1 className="text-lg font-semibold text-gray-900">My Profile</h1>
           </div>
           {(isAdmin || isMGR) && (
-            <Link href="/admin" className="text-xs font-medium px-3 py-1.5 rounded-xl border border-gray-200 text-gray-600">
-              ⚙️ Admin
-            </Link>
+            <Link href="/admin" className="text-xs font-medium px-3 py-1.5 rounded-xl border border-gray-200 text-gray-600">⚙️ Admin</Link>
           )}
         </div>
-        <p className="text-xs text-gray-400 mt-1 max-w-lg mx-auto">{displayName}</p>
+        <p className="text-xs text-gray-400 mt-1 max-w-lg mx-auto px-4">{displayName}</p>
       </div>
 
       <div className="max-w-lg mx-auto px-4 py-4 space-y-4">
+
         {/* Identity */}
         <div className="bg-white rounded-2xl border border-gray-100 p-4">
           <p className="text-xs font-medium text-gray-500 mb-3">Your identity</p>
@@ -139,13 +196,70 @@ export default function ProfilePage() {
           </div>
         </div>
 
+        {/* Community */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-4">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-medium text-gray-500">🏘️ My Community</p>
+            <button onClick={() => { setEditCommunity(!editCommunity); setCommunitySearch(community?.name || '') }}
+              className="text-xs text-green-600 font-medium">
+              {editCommunity ? 'Cancel' : 'Change'}
+            </button>
+          </div>
+          {!editCommunity ? (
+            community ? (
+              <div>
+                <p className="text-sm font-medium text-gray-800">{community.name}</p>
+                <p className="text-xs text-gray-400 mt-0.5">{community.city}{community.state ? `, ${community.state}` : ''}{community.zip_code ? ` ${community.zip_code}` : ''}</p>
+                <p className="text-xs text-gray-400">{community.member_count} member{community.member_count !== 1 ? 's' : ''}</p>
+              </div>
+            ) : (
+              <div>
+                <p className="text-xs text-gray-400 mb-2">No community assigned yet.</p>
+                <button onClick={() => setEditCommunity(true)} className="text-xs text-green-600 font-medium">+ Add my neighborhood</button>
+              </div>
+            )
+          ) : (
+            <div ref={searchRef} className="relative">
+              <input
+                type="text"
+                value={communitySearch}
+                onChange={e => searchCommunities(e.target.value)}
+                placeholder="Search your neighborhood..."
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-green-500"
+                autoComplete="off"
+              />
+              {showDropdown && communityMatches.length > 0 && (
+                <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-xl mt-1 shadow-lg overflow-hidden">
+                  {communityMatches.map(c => (
+                    <button key={c.id} type="button" onClick={() => selectCommunity(c)}
+                      className="w-full text-left px-4 py-3 text-sm hover:bg-green-50 border-b border-gray-50 last:border-0">
+                      <p className="font-medium text-gray-800">{c.name}</p>
+                      <p className="text-xs text-gray-400">{c.city}, {c.state} · {c.member_count} member{c.member_count !== 1 ? 's' : ''}</p>
+                    </button>
+                  ))}
+                  <button type="button" onClick={() => { setShowDropdown(false); setSelectedCommunity(null) }}
+                    className="w-full text-left px-4 py-3 text-sm text-green-600 bg-green-50">
+                    + Create "{communitySearch}" as new community
+                  </button>
+                </div>
+              )}
+              {selectedCommunity && (
+                <p className="text-xs text-green-600 mt-1">✓ Selected: {selectedCommunity.name}</p>
+              )}
+              <button onClick={saveCommunity} disabled={saving || !communitySearch.trim()}
+                className="mt-2 w-full py-2.5 rounded-xl text-white text-xs font-medium"
+                style={{background: '#1D9E75'}}>
+                {saving ? 'Saving...' : 'Save community'}
+              </button>
+            </div>
+          )}
+        </div>
+
         {/* Lives and Stars */}
         <div className="bg-white rounded-2xl border border-gray-100 p-4">
           <div className="flex items-center justify-between mb-3">
             <p className="text-xs font-medium text-gray-500">❤️ Lives & ⭐ Stars</p>
-            <Link href="/give" className="text-xs font-medium px-3 py-1.5 rounded-xl text-white" style={{background:'#1D9E75'}}>
-              Give back →
-            </Link>
+            <Link href="/give" className="text-xs font-medium px-3 py-1.5 rounded-xl text-white" style={{background:'#1D9E75'}}>Give back →</Link>
           </div>
           <div className="grid grid-cols-2 gap-3 mb-3">
             <div className="bg-red-50 rounded-xl p-3 text-center">
@@ -161,9 +275,7 @@ export default function ProfilePage() {
               <p className="text-xs text-amber-600 font-medium">{stars} stars · {starsUntilLife} until bonus Life</p>
             </div>
           </div>
-          <p className="text-xs text-gray-400 leading-relaxed">
-            We encourage only those truly in need to use their Life. If you have one and don't need it — gift it to a neighbor who does!
-          </p>
+          <p className="text-xs text-gray-400 leading-relaxed">We encourage only those truly in need to use their Life. If you have one and don't need it — gift it to a neighbor who does!</p>
         </div>
 
         {/* Request Help */}
@@ -177,13 +289,8 @@ export default function ProfilePage() {
             </div>
           ) : !showHelpForm ? (
             <div>
-              <p className="text-xs text-gray-400 mb-3 leading-relaxed">
-                If you need help with something around your home and have a Life available, you can proactively request volunteer assistance. Your request goes to your manager first — no pressure, no obligations.
-              </p>
-              <button onClick={() => setShowHelpForm(true)}
-                className="w-full py-3 rounded-xl text-xs font-medium text-white" style={{background:'#1D9E75'}}>
-                🆘 Request volunteer help
-              </button>
+              <p className="text-xs text-gray-400 mb-3 leading-relaxed">If you need help with something around your home and have a Life available, you can proactively request volunteer assistance.</p>
+              <button onClick={() => setShowHelpForm(true)} className="w-full py-3 rounded-xl text-xs font-medium text-white" style={{background:'#1D9E75'}}>🆘 Request volunteer help</button>
             </div>
           ) : (
             <form onSubmit={submitHelpRequest} className="space-y-3">
@@ -235,7 +342,7 @@ export default function ProfilePage() {
           <p className="text-xs font-medium text-gray-500 mb-3">Your activity</p>
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-gray-50 rounded-xl p-3">
-              <p className="text-xs text-gray-400">Reports submitted</p>
+              <p className="text-xs text-gray-400">Concerns submitted</p>
               <p className="text-xl font-semibold text-gray-800 mt-1">{profile?.report_count || 0}</p>
             </div>
             <div className="bg-gray-50 rounded-xl p-3">
@@ -244,6 +351,15 @@ export default function ProfilePage() {
             </div>
           </div>
         </div>
+
+        {/* Preferences link */}
+        <Link href="/onboarding" className="flex items-center justify-between bg-white rounded-2xl border border-gray-100 p-4 active:bg-gray-50">
+          <div>
+            <p className="text-sm font-medium text-gray-700">My preferences & skills</p>
+            <p className="text-xs text-gray-400 mt-0.5">Update your community interests and skills</p>
+          </div>
+          <span className="text-gray-300 text-lg">›</span>
+        </Link>
 
         {/* Access level */}
         <div className="bg-white rounded-2xl border border-gray-100 p-4">

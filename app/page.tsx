@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 
@@ -10,13 +10,49 @@ export default function Home() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [communityCode, setCommunityCode] = useState('')
   const [address, setAddress] = useState('')
+  const [city, setCity] = useState('')
+  const [state, setState] = useState('')
+  const [zipCode, setZipCode] = useState('')
   const [residentType, setResidentType] = useState('resident')
   const [phone, setPhone] = useState('')
+  const [communitySearch, setCommunitySearch] = useState('')
+  const [communityMatches, setCommunityMatches] = useState<any[]>([])
+  const [selectedCommunity, setSelectedCommunity] = useState<any>(null)
+  const [showDropdown, setShowDropdown] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
+  const searchRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setShowDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  async function searchCommunities(val: string) {
+    setCommunitySearch(val)
+    setSelectedCommunity(null)
+    if (val.length < 2) { setCommunityMatches([]); setShowDropdown(false); return }
+    const { data } = await supabase
+      .from('communities')
+      .select('*')
+      .ilike('name', `%${val}%`)
+      .limit(6)
+    setCommunityMatches(data || [])
+    setShowDropdown(true)
+  }
+
+  function selectCommunity(c: any) {
+    setSelectedCommunity(c)
+    setCommunitySearch(c.name)
+    setShowDropdown(false)
+  }
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -39,31 +75,56 @@ export default function Home() {
     e.preventDefault()
     setLoading(true)
     setError('')
-    if (!communityCode.trim()) { setError('Community access code is required'); setLoading(false); return }
+    if (!communitySearch.trim()) { setError('Please enter your neighborhood or subdivision name'); setLoading(false); return }
     if (password !== confirmPassword) { setError('Passwords do not match'); setLoading(false); return }
     if (password.length < 8) { setError('Password must be at least 8 characters'); setLoading(false); return }
-    if (!address.trim()) { setError('Address is required for verification'); setLoading(false); return }
+    if (!address.trim()) { setError('Street address is required for verification'); setLoading(false); return }
+    if (!city.trim()) { setError('City is required'); setLoading(false); return }
+    if (!state.trim()) { setError('State is required'); setLoading(false); return }
+    if (!zipCode.trim()) { setError('ZIP code is required'); setLoading(false); return }
+
     const { error: authError, data } = await supabase.auth.signUp({
       email, password,
-      options: { data: { community_code: communityCode.toUpperCase() } }
+      options: { data: { community_name: communitySearch } }
     })
     if (authError) { setError(authError.message); setLoading(false); return }
+
     if (data.user) {
+      // Create or find community
+      let communityId = selectedCommunity?.id || null
+      if (!communityId) {
+        const slug = communitySearch.toUpperCase().replace(/\s+/g, '_')
+        const { data: existing } = await supabase
+          .from('communities')
+          .select('id')
+          .eq('slug', slug)
+          .single()
+        if (existing) {
+          communityId = existing.id
+          await supabase.from('communities').update({ member_count: existing.member_count + 1 }).eq('id', existing.id)
+        } else {
+          const { data: newCom } = await supabase
+            .from('communities')
+            .insert({ name: communitySearch, slug, city, state, zip_code: zipCode, created_by: data.user.id, member_count: 1 })
+            .select().single()
+          communityId = newCom?.id || null
+        }
+      }
+
       const { data: maxData } = await supabase.from('profiles').select('neighbor_number').order('neighbor_number', { ascending: false }).limit(1)
       const nextNum = maxData && maxData.length > 0 ? (maxData[0].neighbor_number || 44) + 1 : 45
       await supabase.from('profiles').upsert({
         id: data.user.id, email, neighbor_number: nextNum,
-        community_code: communityCode.toUpperCase(), access_level: 'C',
-        lives_remaining: 1, report_count: 0, report_weight: 5.0, is_anonymous: false,
-        status: communityCode.toUpperCase() === 'ADMIN' ? 'approved' : 'pending',
-        address, resident_type: residentType, phone: phone || null,
+        community_code: communitySearch.toUpperCase().replace(/\s+/g, '_'),
+        community_id: communityId,
+        access_level: 'C', lives_remaining: 1, report_count: 0,
+        report_weight: 5.0, is_anonymous: false,
+        status: 'pending',
+        address, city, state, zip_code: zipCode,
+        resident_type: residentType, phone: phone || null,
       })
     }
-    if (communityCode.toUpperCase() === 'ADMIN') {
-      router.push('/onboarding')
-    } else {
-      setMessage('Registration submitted! Your address will be verified and you will receive approval within 24 hours. Check your spam/junk folder for our email and mark it as "Not Spam".')
-    }
+    setMessage('Registration submitted! Your address will be verified and you will receive approval within 24 hours. Check your spam/junk folder for our email and mark it as "Not Spam".')
     setLoading(false)
   }
 
@@ -145,11 +206,8 @@ export default function Home() {
           ← Back
         </button>
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-4" style={{background:'#1D9E75'}}>
-            <svg width="28" height="28" fill="none" viewBox="0 0 24 24">
-              <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M9 22V12h6v10" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
+          <div className="mb-4 flex justify-center">
+            <img src="/icon-192.png" alt="NeighborhoodResolve" width="56" height="56" style={{borderRadius:'50%'}}/>
           </div>
           <h1 className="text-2xl font-semibold text-gray-900">NeighborhoodResolve</h1>
           <p className="text-sm font-medium text-gray-700 mt-1">Connecting neighbors. Resolving concerns. Building stronger communities.</p>
@@ -190,20 +248,73 @@ export default function Home() {
         ) : (
           <>
             <form onSubmit={handleRegister} className="space-y-4">
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">Community access code</label>
-                <input type="text" value={communityCode} onChange={e => setCommunityCode(e.target.value)}
-                  placeholder="e.g. MAPLEGROVE"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-green-500 uppercase" required/>
-                <p className="text-xs text-gray-400 mt-1">Provided by your community administrator</p>
+
+              {/* Community search */}
+              <div ref={searchRef} className="relative">
+                <label className="block text-sm text-gray-600 mb-1">Neighborhood or Subdivision name</label>
+                <input
+                  type="text"
+                  value={communitySearch}
+                  onChange={e => searchCommunities(e.target.value)}
+                  placeholder="e.g. Maple Grove, Oak Hills..."
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-green-500"
+                  required
+                  autoComplete="off"
+                />
+                {selectedCommunity && (
+                  <p className="text-xs text-green-600 mt-1">✓ Joining: {selectedCommunity.name} · {selectedCommunity.city}, {selectedCommunity.state}</p>
+                )}
+                {!selectedCommunity && communitySearch.length >= 2 && communityMatches.length === 0 && (
+                  <p className="text-xs text-gray-400 mt-1">No existing community found — a new one will be created for your neighborhood.</p>
+                )}
+                {showDropdown && communityMatches.length > 0 && (
+                  <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-xl mt-1 shadow-lg overflow-hidden">
+                    {communityMatches.map(c => (
+                      <button key={c.id} type="button" onClick={() => selectCommunity(c)}
+                        className="w-full text-left px-4 py-3 text-sm hover:bg-green-50 border-b border-gray-50 last:border-0">
+                        <p className="font-medium text-gray-800">{c.name}</p>
+                        <p className="text-xs text-gray-400">{c.city}, {c.state} {c.zip_code} · {c.member_count} member{c.member_count !== 1 ? 's' : ''}</p>
+                      </button>
+                    ))}
+                    <button type="button" onClick={() => { setShowDropdown(false); setSelectedCommunity(null) }}
+                      className="w-full text-left px-4 py-3 text-sm text-green-600 bg-green-50">
+                      + Create "{communitySearch}" as a new community
+                    </button>
+                  </div>
+                )}
               </div>
+
+              {/* Address fields */}
               <div>
-                <label className="block text-sm text-gray-600 mb-1">Your address</label>
+                <label className="block text-sm text-gray-600 mb-1">Street address</label>
                 <input type="text" value={address} onChange={e => setAddress(e.target.value)}
                   placeholder="e.g. 142 Oak Drive"
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-green-500" required/>
                 <p className="text-xs text-gray-400 mt-1">Used for verification only — kept private</p>
               </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">City</label>
+                  <input type="text" value={city} onChange={e => setCity(e.target.value)}
+                    placeholder="e.g. Atlanta"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-green-500" required/>
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">State</label>
+                  <input type="text" value={state} onChange={e => setState(e.target.value)}
+                    placeholder="e.g. GA"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-green-500" required/>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">ZIP code</label>
+                <input type="text" value={zipCode} onChange={e => setZipCode(e.target.value)}
+                  placeholder="e.g. 30060"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-green-500" required/>
+              </div>
+
               <div>
                 <label className="block text-sm text-gray-600 mb-1">Resident type</label>
                 <select value={residentType} onChange={e => setResidentType(e.target.value)}
@@ -212,12 +323,14 @@ export default function Home() {
                   <option value="landlord">Landlord (I own property here)</option>
                 </select>
               </div>
+
               <div>
                 <label className="block text-sm text-gray-600 mb-1">Email address</label>
                 <input type="email" value={email} onChange={e => setEmail(e.target.value)}
                   placeholder="your@email.com"
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-green-500" required/>
               </div>
+
               <div>
                 <label className="block text-sm text-gray-600 mb-1">Password</label>
                 <div className="relative">
@@ -229,26 +342,31 @@ export default function Home() {
                   </button>
                 </div>
               </div>
+
               <div>
                 <label className="block text-sm text-gray-600 mb-1">Confirm password</label>
                 <input type={showPassword ? 'text' : 'password'} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
                   placeholder="••••••••"
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-green-500" required/>
               </div>
+
               <div>
                 <label className="block text-sm text-gray-600 mb-1">Phone <span className="text-gray-400">(optional)</span></label>
                 <input type="tel" value={phone} onChange={e => setPhone(e.target.value)}
                   placeholder="For emergencies only — never shared"
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-green-500"/>
               </div>
+
               {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
               {message && <p className="text-sm text-green-700 bg-green-50 px-3 py-2 rounded-lg">{message}</p>}
+
               <button type="submit" disabled={loading}
                 className="w-full py-3 rounded-xl text-white text-sm font-medium"
                 style={{background: loading ? '#9FE1CB' : '#1D9E75'}}>
                 {loading ? 'Please wait...' : 'Submit registration'}
               </button>
             </form>
+
             <div className="mt-4 p-3 bg-amber-50 rounded-xl">
               <p className="text-xs text-amber-700 text-center leading-relaxed">
                 ⏱ Your address will be verified and you will receive approval within 24 hours.
@@ -262,7 +380,7 @@ export default function Home() {
 
         <div className="mt-4 p-3 bg-green-50 rounded-xl">
           <p className="text-xs text-green-700 text-center leading-relaxed">
-            🔒 Your identity is never shared with other residents. All complaints are routed anonymously.
+            🔒 Your identity is never shared with other residents. All concerns are handled with full privacy.
           </p>
         </div>
       </div>
