@@ -140,11 +140,16 @@ export default function Home() {
           A free platform that helps neighbors connect, communicate, and support one another — so small issues can be resolved before they become lasting conflicts.
         </p>
         <p className="text-sm font-bold text-green-600 mb-8">Free for residents. Always.</p>
-        <div className="flex flex-col items-center gap-2">
+        <div className="flex flex-col items-center gap-3">
           <p className="text-sm text-gray-400 italic">The missing link may be closer than you think.</p>
           <button onClick={() => setMode('login')}
-            className="px-8 py-3 rounded-xl text-white text-sm font-medium" style={{background:'#1D9E75'}}>
-            Enter NeighborhoodResolve
+            className="w-full max-w-xs px-8 py-3 rounded-xl text-white text-sm font-medium" style={{background:'#1D9E75'}}>
+            Already a member? Sign in
+          </button>
+          <p className="text-sm text-gray-400">Not registered yet? <span className="font-semibold text-green-600">It's free.</span></p>
+          <button onClick={() => setMode('register')}
+            className="w-full max-w-xs px-8 py-3 rounded-xl text-sm font-medium border-2 border-green-600 text-green-700 bg-white">
+            Join Your Community
           </button>
           <p className="text-sm font-medium text-gray-500 mt-1">See what your neighborhood can become.</p>
         </div>
