@@ -96,7 +96,7 @@ export default function Home() {
         const slug = communitySearch.toUpperCase().replace(/\s+/g, '_')
         const { data: existing } = await supabase
           .from('communities')
-          .select('id')
+          .select('id, member_count')
           .eq('slug', slug)
           .single()
         if (existing) {
