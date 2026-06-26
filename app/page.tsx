@@ -94,26 +94,36 @@ export default function Home() {
       let communityId = selectedCommunity?.id || null
       if (!communityId) {
         const slug = communitySearch.toUpperCase().replace(/\s+/g, '_')
-        const { data: existing } = await supabase
+        const { data: existing, error: existingError } = await supabase
           .from('communities')
           .select('id, member_count')
           .eq('slug', slug)
           .single()
+        if (existingError && existingError.code !== 'PGRST116') {
+          setError('Community lookup failed: ' + existingError.message)
+          setLoading(false)
+          return
+        }
         if (existing) {
           communityId = existing.id
           await supabase.from('communities').update({ member_count: existing.member_count + 1 }).eq('id', existing.id)
         } else {
-          const { data: newCom } = await supabase
+          const { data: newCom, error: insertError } = await supabase
             .from('communities')
             .insert({ name: communitySearch, slug, city, state, zip_code: zipCode, created_by: data.user.id, member_count: 1 })
             .select().single()
+          if (insertError) {
+            setError('Community creation failed: ' + insertError.message)
+            setLoading(false)
+            return
+          }
           communityId = newCom?.id || null
         }
       }
 
       const { data: maxData } = await supabase.from('profiles').select('neighbor_number').order('neighbor_number', { ascending: false }).limit(1)
       const nextNum = maxData && maxData.length > 0 ? (maxData[0].neighbor_number || 44) + 1 : 45
-      await supabase.from('profiles').upsert({
+      const { error: upsertError } = await supabase.from('profiles').upsert({
         id: data.user.id, email, neighbor_number: nextNum,
         community_code: communitySearch.toUpperCase().replace(/\s+/g, '_'),
         community_id: communityId,
@@ -123,6 +133,11 @@ export default function Home() {
         address, city, state, zip_code: zipCode,
         resident_type: residentType, phone: phone || null,
       })
+      if (upsertError) {
+        setError('Profile creation failed: ' + upsertError.message)
+        setLoading(false)
+        return
+      }
     }
     setMessage('Registration submitted! Your address will be verified and you will receive approval within 24 hours. Check your spam/junk folder for our email and mark it as "Not Spam".')
     setLoading(false)
